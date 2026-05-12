@@ -27,12 +27,22 @@ export async function POST(req: NextRequest) {
     ))
     .all()[0];
 
-  // Si es conmemorativa y hay descripción, buscar por descripción aproximada
+  // Si es conmemorativa y hay descripción, buscar por similitud de texto
   if (!coin && isCommemorative && description) {
     const all = db.select().from(coins)
       .where(and(eq(coins.countryId, country.id), eq(coins.year, year), eq(coins.type, "COMMEMORATIVE")))
       .all();
-    coin = all[0]; // Tomar la primera del año si no se puede hacer match exacto
+    if (all.length > 0) {
+      const words = description.toLowerCase().split(/\W+/).filter((w: string) => w.length > 2);
+      let best = all[0];
+      let bestScore = -1;
+      for (const c of all) {
+        const desc = (c.description ?? "").toLowerCase();
+        const score = words.filter((w: string) => desc.includes(w)).length;
+        if (score > bestScore) { bestScore = score; best = c; }
+      }
+      coin = best;
+    }
   }
 
   if (!coin) return NextResponse.json({ error: "Moneda no encontrada en la base de datos" }, { status: 404 });

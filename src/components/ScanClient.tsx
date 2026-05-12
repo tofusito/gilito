@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 type ScanResult = {
   country: string; countryCode: string; denomination: number;
   year: number; isCommemorative: boolean; description: string | null;
-  confidence: number; notes: string | null;
+  confidence: number;
+  coinId?: number | null;
 };
 
 type Phase = "idle" | "preview" | "loading" | "result" | "error";
@@ -61,23 +62,30 @@ export function ScanClient() {
 
   async function addToCollection() {
     if (!result) return;
-    const res  = await fetch("/api/coins/find", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        countryCode: result.countryCode,
-        denomination: result.denomination,
-        year: result.year,
-        isCommemorative: result.isCommemorative,
-        description: result.description,
-      }),
-    });
-    const data = await res.json() as { coinId?: number; error?: string };
-    if (data.coinId) {
+
+    // coinId ya resuelto por el scan — si no, fallback a /api/coins/find
+    let coinId = result.coinId ?? null;
+    if (!coinId) {
+      const res  = await fetch("/api/coins/find", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          countryCode: result.countryCode,
+          denomination: result.denomination,
+          year: result.year,
+          isCommemorative: result.isCommemorative,
+          description: result.description,
+        }),
+      });
+      const data = await res.json() as { coinId?: number; error?: string };
+      coinId = data.coinId ?? null;
+    }
+
+    if (coinId) {
       await fetch("/api/coins/toggle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coinId: data.coinId, status: "OWNED" }),
+        body: JSON.stringify({ coinId, status: "OWNED" }),
       });
       setAdded(true);
       router.refresh();
@@ -244,16 +252,12 @@ export function ScanClient() {
               <InfoBlock label="Tipo" value={result.isCommemorative ? "Conmem." : "Regular"} />
             </div>
 
-            {result.description && (
-              <div className="bg-[#fef9ee] border border-[#e8a020]/20 rounded-2xl px-4 py-3 mb-4">
-                <p className="text-[10px] text-[#b45309] font-semibold uppercase tracking-wider mb-0.5">Descripción</p>
-                <p className="text-sm text-[#1a1a1a] leading-snug">{result.description}</p>
-              </div>
-            )}
-
-            {result.notes && (
-              <p className="text-xs text-[#78716c] mb-4 leading-relaxed">{result.notes}</p>
-            )}
+            <div className="bg-[#fef9ee] border border-[#e8a020]/20 rounded-2xl px-4 py-3 mb-4">
+              <p className="text-[10px] text-[#b45309] font-semibold uppercase tracking-wider mb-1">Descripción</p>
+              <p className="text-sm text-[#1a1a1a] leading-relaxed">
+                {result.description ?? "Sin descripción disponible"}
+              </p>
+            </div>
 
             {added ? (
               <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 rounded-2xl text-emerald-600 font-semibold">

@@ -2,7 +2,7 @@ import { db } from "./index";
 import { runMigrations } from "./migrate";
 import { users, countries, coins } from "./schema";
 import { COUNTRIES, DENOMINATIONS } from "./seed-countries";
-import { COMMEMORATIVE, expandCommonIssues } from "./seed-commemorative";
+import { COMMEMORATIVE } from "./seed-commemorative";
 import { eq, count } from "drizzle-orm";
 
 export async function initializeDatabase() {
@@ -51,10 +51,7 @@ export async function initializeDatabase() {
     console.log(`✓ ${regularCount} monedas regulares insertadas`);
 
     // Conmemorativas específicas
-    const allComm = [
-      ...expandCommonIssues(COUNTRIES),
-      ...COMMEMORATIVE,
-    ];
+    const allComm = COMMEMORATIVE;
 
     let commCount = 0;
     for (const comm of allComm) {
