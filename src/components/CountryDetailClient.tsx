@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, ChevronLeft, Check, CheckCheck } from "lucide-react";
+import { Heart, ChevronLeft, Check, CheckCheck, Search, X } from "lucide-react";
 import Link from "next/link";
 import { cn, formatDenomination } from "@/lib/utils";
 
@@ -224,53 +224,81 @@ function CoinTile({ coin, onToggle, disabled }: {
 function CommList({ coins, onToggle, disabled }: {
   coins: CoinWithStatus[]; onToggle: (id: number, s: "OWNED" | "WISHLIST") => void; disabled: boolean;
 }) {
+  const [query, setQuery] = useState("");
+  const filtered = query.trim()
+    ? coins.filter(c => c.description?.toLowerCase().includes(query.toLowerCase()) || String(c.year).includes(query))
+    : coins;
+
   return (
-    <div className="space-y-2">
-      {coins.map(coin => (
-        <div
-          key={coin.id}
-          className={cn(
-            "bg-white rounded-2xl border px-4 py-3.5 flex items-center gap-3 transition-all",
-            coin.owned ? "border-[#e8a020]/40 bg-[#fef9ee]" : "border-[#f0ede8]"
+    <div>
+      {coins.length > 6 && (
+        <div className="flex items-center gap-2 bg-[#f5f3ef] rounded-xl px-3 py-2 mb-3">
+          <Search size={14} className="text-[#78716c] shrink-0" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Buscar conmemorativa…"
+            className="flex-1 bg-transparent text-sm outline-none text-[#1a1a1a] placeholder:text-[#b4ada4]"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="text-[#b4ada4]">
+              <X size={13} />
+            </button>
           )}
-        >
-          <div className={cn(
-            "w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 text-sm font-bold",
-            coin.owned ? "border-[#e8a020] bg-[#e8a020] text-white" : "border-[#f0ede8] text-[#78716c]"
-          )}>
-            {coin.owned ? <Check size={16} /> : "2€"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium leading-snug">{coin.description}</p>
-            <p className="text-[11px] text-[#78716c] mt-0.5">
-              {coin.year}{coin.seriesName ? ` · ${coin.seriesName}` : ""}
-              {coin.isCommonIssue ? " · Emisión común" : ""}
-            </p>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <button
-              disabled={disabled}
-              onClick={() => onToggle(coin.id, "WISHLIST")}
-              className={cn(
-                "w-9 h-9 rounded-full border flex items-center justify-center transition-all",
-                coin.wishlisted ? "border-violet-400 bg-violet-50 text-violet-500" : "border-[#f0ede8] text-[#d4c9b8]"
-              )}
-            >
-              <Heart size={15} fill={coin.wishlisted ? "currentColor" : "none"} />
-            </button>
-            <button
-              disabled={disabled}
-              onClick={() => onToggle(coin.id, "OWNED")}
-              className={cn(
-                "w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all",
-                coin.owned ? "border-[#e8a020] bg-[#e8a020] text-white" : "border-[#f0ede8] text-[#d4c9b8]"
-              )}
-            >
-              <Check size={15} />
-            </button>
-          </div>
         </div>
-      ))}
+      )}
+      {query && (
+        <p className="text-xs text-[#78716c] mb-2 pl-1">
+          {filtered.length === 0 ? "Sin resultados" : `${filtered.length} moneda${filtered.length !== 1 ? "s" : ""}`}
+        </p>
+      )}
+      <div className="space-y-2">
+        {filtered.map(coin => (
+          <div
+            key={coin.id}
+            className={cn(
+              "bg-white rounded-2xl border px-4 py-3 flex items-center gap-3 transition-all",
+              coin.owned ? "border-[#e8a020]/40 bg-[#fef9ee]" : "border-[#f0ede8]"
+            )}
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 text-sm font-bold",
+              coin.owned ? "border-[#e8a020] bg-[#e8a020] text-white" : "border-[#f0ede8] text-[#78716c]"
+            )}>
+              {coin.owned ? <Check size={16} /> : "2€"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-snug line-clamp-1">{coin.description}</p>
+              <p className="text-[11px] text-[#78716c] mt-0.5">
+                {coin.year}{coin.seriesName ? ` · ${coin.seriesName}` : ""}
+                {coin.isCommonIssue ? " · Emisión común" : ""}
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                disabled={disabled}
+                onClick={() => onToggle(coin.id, "WISHLIST")}
+                className={cn(
+                  "w-9 h-9 rounded-full border flex items-center justify-center transition-all",
+                  coin.wishlisted ? "border-violet-400 bg-violet-50 text-violet-500" : "border-[#f0ede8] text-[#d4c9b8]"
+                )}
+              >
+                <Heart size={15} fill={coin.wishlisted ? "currentColor" : "none"} />
+              </button>
+              <button
+                disabled={disabled}
+                onClick={() => onToggle(coin.id, "OWNED")}
+                className={cn(
+                  "w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all",
+                  coin.owned ? "border-[#e8a020] bg-[#e8a020] text-white" : "border-[#f0ede8] text-[#d4c9b8]"
+                )}
+              >
+                <Check size={15} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

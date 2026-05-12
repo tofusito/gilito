@@ -21,7 +21,7 @@ export default async function LogrosPage() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold tracking-tight">Logros</h1>
         <p className="text-sm text-[#78716c] mt-0.5">
-          {unlocked.length} desbloqueados · {locked.length} pendientes
+          {unlocked.length} desbloqueados · {achievements.length} en total
         </p>
       </div>
 
@@ -55,9 +55,12 @@ export default async function LogrosPage() {
         </section>
       )}
 
-      {/* Pendientes por categoría */}
+      {/* Pendientes por categoría — solo los 3 más cercanos */}
       {categories.map(cat => {
-        const items = locked.filter(a => a.category === cat);
+        const items = locked
+          .filter(a => a.category === cat)
+          .sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))
+          .slice(0, 3);
         if (items.length === 0) return null;
         return (
           <section key={cat} className="mb-5">
