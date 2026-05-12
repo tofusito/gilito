@@ -3,8 +3,6 @@ services:
     image: gilito:latest
     container_name: gilito
     restart: unless-stopped
-    ports:
-      - "3030:3000"
     volumes:
       - /home/tofu/docker/gilito/data:/app/data
     environment:
@@ -19,3 +17,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    networks:
+      - gilito
+
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflare-gilito
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - gilito
+
+networks:
+  gilito:
+    driver: bridge

@@ -3,9 +3,9 @@ import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 
 export const metadata: Metadata = {
-  title: "Euro Collector",
+  title: "Gilito",
   description: "Tu colección de monedas euro",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Euro Collector" },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Gilito" },
 };
 
 export const viewport: Viewport = {
