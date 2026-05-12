@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf8;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-border: #f0ede8;
+  --muted: #f5f3ef;
+  --muted-foreground: #78716c;
+  --accent: #e8a020;
+  --accent-light: #fef3c7;
+  --accent-dark: #b45309;
+  --success: #10b981;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+.safe-top    { padding-top: max(env(safe-area-inset-top), 0px); }
+.safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4c9b8; border-radius: 2px; }
+
+.coin-card { transition: transform 150ms ease, box-shadow 150ms ease; }
+.coin-card:active { transform: scale(0.97); }
