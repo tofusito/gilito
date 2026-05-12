@@ -8,44 +8,41 @@ export default function AppleIcon() {
     <div
       style={{
         width: 180, height: 180,
-        borderRadius: 40,
-        background: "linear-gradient(145deg, #f0a820 0%, #c87d10 100%)",
+        background: "#1a1a1a",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        color: "white",
-        gap: 4,
       }}
     >
-      {/* Moneda */}
+      {/* Anillo exterior */}
       <div
         style={{
-          width: 96, height: 96,
-          borderRadius: 48,
-          background: "rgba(255,255,255,0.18)",
-          border: "4px solid rgba(255,255,255,0.5)",
+          width: 116, height: 116,
+          borderRadius: 58,
+          background: "#e8a020",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 54,
-          fontWeight: 900,
-          color: "white",
-          letterSpacing: -2,
         }}
       >
-        €
-      </div>
-      <div
-        style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: "rgba(255,255,255,0.9)",
-          letterSpacing: 1,
-          marginTop: 4,
-        }}
-      >
-        GILITO
+        {/* Anillo interior */}
+        <div
+          style={{
+            width: 88, height: 88,
+            borderRadius: 44,
+            background: "#1a1a1a",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#e8a020",
+            fontSize: 46,
+            fontWeight: 300,
+            fontFamily: "serif",
+            letterSpacing: -1,
+          }}
+        >
+          €
+        </div>
       </div>
     </div>,
     { ...size }
