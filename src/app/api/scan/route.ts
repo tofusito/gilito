@@ -35,7 +35,7 @@ Responde SOLO con JSON válido, sin markdown:
 }`;
 
   try {
-    const res = await fetch(`${endpoint}/v1/chat/completions`, {
+    const res = await fetch(`${endpoint}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
