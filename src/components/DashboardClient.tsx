@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { CountryStats } from "@/lib/stats";
+import { useRef, useState } from "react";
 
 type DashboardData = {
   user: { name: string };
@@ -90,6 +91,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           Ver {sorted.length - 10} países más
         </Link>
       )}
+
+      <BackupSection />
     </div>
   );
 }
@@ -118,6 +121,75 @@ function ProgressBlock({
       <p className="text-[10px] text-[#78716c]">
         <span className="font-semibold" style={{ color }}>{value}</span> / {total} {sublabel}
       </p>
+    </div>
+  );
+}
+
+function BackupSection() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleExport() {
+    const res = await fetch("/api/collection/export");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `gilito-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const res = await fetch("/api/collection/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(json),
+      });
+      const data = await res.json() as { imported?: number; skipped?: number; error?: string };
+      if (data.error) throw new Error(data.error);
+      setMsg({ text: `${data.imported} monedas restauradas${data.skipped ? `, ${data.skipped} no encontradas` : ""}`, ok: true });
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      setMsg({ text: err instanceof Error ? err.message : "Error al importar", ok: false });
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mt-6 border-t border-[#f0ede8] pt-5">
+      <p className="text-xs text-[#78716c] font-medium mb-3 uppercase tracking-wide">Copia de seguridad</p>
+      <div className="flex gap-2">
+        <button
+          onClick={handleExport}
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-[#f0ede8] text-sm font-medium text-[#44403c] shadow-sm active:scale-95 transition-transform"
+        >
+          <span>↓</span> Exportar
+        </button>
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-[#f0ede8] text-sm font-medium text-[#44403c] shadow-sm active:scale-95 transition-transform disabled:opacity-50"
+        >
+          <span>↑</span> {busy ? "Importando…" : "Restaurar"}
+        </button>
+        <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+      </div>
+      {msg && (
+        <p className={cn("mt-2 text-xs text-center font-medium", msg.ok ? "text-emerald-600" : "text-red-500")}>
+          {msg.text}
+        </p>
+      )}
     </div>
   );
 }
