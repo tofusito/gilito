@@ -11,7 +11,7 @@ import urllib.request
 import os
 
 GILITO_DB = os.path.join(os.path.dirname(__file__), "../data/gilito.db")
-API_KEY   = os.environ.get("GEMINI_API_KEY", "REDACTED")
+API_KEY   = os.environ["GEMINI_API_KEY"]
 ENDPOINT  = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 MODEL     = "gemini-2.5-flash-lite"
 
