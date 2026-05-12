@@ -1,18 +1,15 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
-  const apiKey   = process.env.AI_API_KEY;
-  const endpoint = process.env.AI_ENDPOINT;
+const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
-  if (!apiKey || !endpoint) {
-    return NextResponse.json(
-      { error: "AI_API_KEY o AI_ENDPOINT no configurados" },
-      { status: 503 }
-    );
+export async function POST(req: NextRequest) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "GEMINI_API_KEY no configurada" }, { status: 503 });
   }
 
-  const body = await req.json() as { imageBase64: string; mimeType: string };
+  const body  = await req.json() as { imageBase64: string; mimeType: string };
   const model = process.env.AI_MODEL ?? "gemini-2.0-flash-lite";
 
   const prompt = `Analiza esta imagen de una moneda euro. Identifica:
@@ -35,7 +32,7 @@ Responde SOLO con JSON válido, sin markdown:
 }`;
 
   try {
-    const res = await fetch(`${endpoint}/chat/completions`, {
+    const res = await fetch(GEMINI_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -64,8 +61,8 @@ Responde SOLO con JSON válido, sin markdown:
       return NextResponse.json({ error: data.error.message }, { status: 500 });
     }
 
-    const text  = data.choices?.[0]?.message?.content ?? "";
-    const clean = text.replace(/```json|```/g, "").trim();
+    const text   = data.choices?.[0]?.message?.content ?? "";
+    const clean  = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
     return NextResponse.json(parsed);
   } catch {
