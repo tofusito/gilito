@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Camera, Sparkles, Check, Loader2, AlertCircle, X, RefreshCcw } from "lucide-react";
 import { cn, formatDenomination } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 
 type ScanResult = {
   country: string; countryCode: string; denomination: number;
@@ -101,7 +102,7 @@ export function ScanClient() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col max-w-lg mx-auto relative overflow-hidden bg-[#fafaf8]">
+    <div className="min-h-screen flex flex-col max-w-lg mx-auto relative overflow-hidden">
       <input
         ref={fileRef}
         type="file"
@@ -112,12 +113,24 @@ export function ScanClient() {
       />
 
       {/* ── IDLE: pantalla de bienvenida centrada ── */}
+      <AnimatePresence mode="wait" initial={false}>
       {phase === "idle" && (
-        <div className="flex-1 flex flex-col items-center justify-center px-8 pb-24 gap-8">
+        <motion.div
+          key="idle"
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          className="flex-1 flex flex-col items-center justify-center px-8 pb-24 gap-8"
+        >
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="w-24 h-24 rounded-[28px] bg-[#1a1a1a] flex items-center justify-center shadow-2xl">
+            <motion.div
+              animate={{ y: [0, -6, 0], rotate: [0, -2, 2, 0] }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+              className="relative w-24 h-24 rounded-[28px] bg-[#1a1a1a] flex items-center justify-center shadow-2xl coin-shine"
+            >
+              <span className="absolute inset-0 rounded-[28px] border border-[#e8a020]/30 pulse-ring" />
               <Sparkles size={38} className="text-[#e8a020]" />
-            </div>
+            </motion.div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Identificar moneda</h1>
               <p className="text-sm text-[#78716c] mt-1.5">Haz una foto o sube de galería<br/>y la IA reconocerá la moneda</p>
@@ -126,19 +139,25 @@ export function ScanClient() {
 
           <button
             onClick={() => fileRef.current?.click()}
-            className="w-full max-w-xs py-4 bg-[#1a1a1a] text-white rounded-2xl font-semibold flex items-center justify-center gap-2.5 text-base shadow-lg"
+            className="w-full max-w-xs py-4 bg-[#1a1a1a] text-white rounded-2xl font-semibold flex items-center justify-center gap-2.5 text-base shadow-lg coin-card"
           >
             <Camera size={20} />
             Añadir foto
           </button>
-        </div>
+        </motion.div>
       )}
 
       {/* ── PREVIEW: imagen + botón de escanear ── */}
       {phase === "preview" && image && (
-        <div className="flex-1 flex flex-col">
+        <motion.div
+          key="preview"
+          initial={false}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          className="flex-1 flex flex-col"
+        >
           {/* Imagen full width */}
-          <div className="relative flex-1 bg-[#1a1a1a] flex items-center justify-center" style={{ minHeight: 320 }}>
+          <div className="relative flex-1 bg-[#1a1a1a] flex items-center justify-center scan-grid" style={{ minHeight: 320 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={image} alt="Moneda" className="w-full h-full object-contain" style={{ maxHeight: 420 }} />
             <button
@@ -154,7 +173,7 @@ export function ScanClient() {
             <p className="text-center text-sm text-[#78716c] mb-4">Imagen cargada correctamente</p>
             <button
               onClick={scan}
-              className="w-full py-4 bg-[#1a1a1a] text-white rounded-2xl font-semibold flex items-center justify-center gap-2 text-base shadow-md"
+              className="w-full py-4 bg-[#1a1a1a] text-white rounded-2xl font-semibold flex items-center justify-center gap-2 text-base shadow-md coin-card"
             >
               <Sparkles size={18} />
               Identificar con IA
@@ -166,31 +185,45 @@ export function ScanClient() {
               Cambiar foto
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* ── LOADING: animación centrada ── */}
       {phase === "loading" && image && (
-        <div className="flex-1 flex flex-col">
-          <div className="relative flex-1 bg-[#1a1a1a] flex items-center justify-center" style={{ minHeight: 320 }}>
+        <motion.div
+          key="loading"
+          initial={false}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="flex-1 flex flex-col"
+        >
+          <div className="relative flex-1 bg-[#1a1a1a] flex items-center justify-center scan-grid overflow-hidden" style={{ minHeight: 320 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={image} alt="Moneda" className="w-full h-full object-contain opacity-40" style={{ maxHeight: 420 }} />
+            <div className="absolute inset-x-0 top-1/2 h-20 bg-gradient-to-b from-transparent via-[#e8a020]/35 to-transparent scan-line" />
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+              <div className="relative w-20 h-20 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                <span className="absolute inset-0 rounded-full border border-[#e8a020]/50 pulse-ring" />
                 <Loader2 size={34} className="animate-spin text-[#e8a020]" />
               </div>
-              <p className="text-white font-semibold text-base drop-shadow">Analizando con Gemini…</p>
+              <p className="text-white font-semibold text-base drop-shadow">Analizando con Gemini...</p>
             </div>
           </div>
           <div className="bg-[#fafaf8] px-6 py-6">
             <div className="h-12 rounded-2xl bg-[#f5f3ef] animate-pulse" />
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* ── ERROR ── */}
       {phase === "error" && (
-        <div className="flex-1 flex flex-col items-center justify-center px-8 pb-24 gap-6">
+        <motion.div
+          key="error"
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          className="flex-1 flex flex-col items-center justify-center px-8 pb-24 gap-6"
+        >
           <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
             <AlertCircle size={34} className="text-red-400" />
           </div>
@@ -205,12 +238,18 @@ export function ScanClient() {
             <RefreshCcw size={15} />
             Intentar de nuevo
           </button>
-        </div>
+        </motion.div>
       )}
 
       {/* ── RESULT: imagen + bottom sheet ── */}
       {phase === "result" && result && image && (
-        <div className="flex-1 flex flex-col">
+        <motion.div
+          key="result"
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          className="flex-1 flex flex-col"
+        >
           <div className="relative bg-[#1a1a1a] flex items-center justify-center" style={{ height: 260 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={image} alt="Moneda" className="w-full h-full object-contain" />
@@ -241,7 +280,7 @@ export function ScanClient() {
                 <p className="text-[11px] text-[#78716c] font-medium uppercase tracking-wider">Moneda identificada</p>
                 <h2 className="text-xl font-bold leading-tight mt-0.5">{result.country}</h2>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-[#e8a020] flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[#e8a020] flex items-center justify-center shrink-0 coin-shine">
                 <span className="text-white font-bold text-sm">{formatDenomination(result.denomination)}</span>
               </div>
             </div>
@@ -274,15 +313,16 @@ export function ScanClient() {
                 </button>
                 <button
                   onClick={addToCollection}
-                  className="flex-1 py-3.5 rounded-2xl bg-[#e8a020] text-white font-semibold text-sm shadow-md"
+                  className="flex-1 py-3.5 rounded-2xl bg-[#e8a020] text-white font-semibold text-sm shadow-md coin-card"
                 >
                   Añadir a colección
                 </button>
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

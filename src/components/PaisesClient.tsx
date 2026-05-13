@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CountryStats } from "@/lib/stats";
+import { AnimatePresence, motion } from "framer-motion";
 
 export function PaisesClient({ stats }: { stats: CountryStats[] }) {
   const [open, setOpen]     = useState(false);
@@ -32,7 +33,7 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
     : stats;
 
   return (
-    <div className="min-h-screen px-4 pt-6 pb-4 max-w-lg mx-auto">
+    <div className="min-h-screen px-4 pt-6 pb-4 max-w-lg mx-auto rise-in">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <h1 className={cn(
@@ -77,71 +78,85 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
       </div>
 
       {/* Contador cuando se filtra */}
-      {open && query && (
-        <p className="text-xs text-[#78716c] mb-3 pl-1">
-          {filtered.length === 0
-            ? "Sin resultados"
-            : `${filtered.length} país${filtered.length !== 1 ? "es" : ""}`}
-        </p>
-      )}
+      <AnimatePresence>
+        {open && query && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="text-xs text-[#78716c] mb-3 pl-1"
+          >
+            {filtered.length === 0
+              ? "Sin resultados"
+              : `${filtered.length} país${filtered.length !== 1 ? "es" : ""}`}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       {/* Lista */}
       <div className="space-y-2.5">
-        {filtered.map(c => (
-          <Link
+        {filtered.map((c, index) => (
+          <div
             key={c.id}
-            href={`/paises/${c.code.toLowerCase()}`}
-            className="flex items-center gap-3 bg-white rounded-2xl px-4 py-4 shadow-sm border border-[#f0ede8] coin-card"
+            className="rise-in"
+            style={{ animationDelay: `${Math.min(index * 18, 180)}ms` }}
           >
-            <span className="text-3xl shrink-0">{c.flagEmoji}</span>
+            <Link
+              href={`/paises/${c.code.toLowerCase()}`}
+              className="flex items-center gap-3 bg-white/92 rounded-2xl px-4 py-4 shadow-sm border border-[#f0ede8] coin-card"
+            >
+              <span className="text-3xl shrink-0">{c.flagEmoji}</span>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-2.5">
-                <div>
-                  <p className="text-sm font-semibold">{c.name}</p>
-                  <p className="text-[11px] text-[#78716c]">Euro desde {c.yearJoined}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div>
+                    <p className="text-sm font-semibold">{c.name}</p>
+                    <p className="text-[11px] text-[#78716c]">Euro desde {c.yearJoined}</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Series anuales */}
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[10px] text-[#78716c] w-10 shrink-0">Años</span>
-                <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${c.yearsPct}%`,
-                      backgroundColor: c.yearsPct >= 100 ? "#10b981" : "#e8a020",
-                    }}
-                  />
-                </div>
-                <span className="text-[10px] font-semibold text-[#1a1a1a] w-12 text-right shrink-0">
-                  {c.completeYears}/{c.totalYears} sets
-                </span>
-              </div>
-
-              {/* Conmemorativas */}
-              {c.totalComm > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-[#78716c] w-10 shrink-0">Conmem.</span>
+                {/* Series anuales */}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[10px] text-[#78716c] w-10 shrink-0">Años</span>
                   <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
-                    <div
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${c.yearsPct}%` }}
                       className="h-full rounded-full"
                       style={{
-                        width: `${c.commPct}%`,
-                        backgroundColor: c.commPct >= 100 ? "#10b981" : "#8b5cf6",
+                        backgroundColor: c.yearsPct >= 100 ? "#10b981" : "#e8a020",
                       }}
                     />
                   </div>
                   <span className="text-[10px] font-semibold text-[#1a1a1a] w-12 text-right shrink-0">
-                    {c.ownedComm}/{c.totalComm}
+                    {c.completeYears}/{c.totalYears} sets
                   </span>
                 </div>
-              )}
-            </div>
 
-            <span className="text-[#d4c9b8] shrink-0">›</span>
-          </Link>
+                {/* Conmemorativas */}
+                {c.totalComm > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[#78716c] w-10 shrink-0">Conmem.</span>
+                    <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${c.commPct}%` }}
+                        className="h-full rounded-full"
+                        style={{
+                          backgroundColor: c.commPct >= 100 ? "#10b981" : "#8b5cf6",
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-semibold text-[#1a1a1a] w-12 text-right shrink-0">
+                      {c.ownedComm}/{c.totalComm}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <span className="text-[#d4c9b8] shrink-0">›</span>
+            </Link>
+          </div>
         ))}
       </div>
     </div>

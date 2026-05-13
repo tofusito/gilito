@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Heart, ChevronLeft, Check, CheckCheck, Search, X } from "lucide-react";
 import Link from "next/link";
 import { cn, formatDenomination } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 
 type CoinWithStatus = {
   id: number; denomination: number; year: number; type: string;
@@ -65,13 +66,19 @@ export function CountryDetailClient({
   }
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto">
-      <div className="sticky top-0 bg-[#fafaf8]/95 backdrop-blur-sm border-b border-[#f0ede8] px-4 pt-4 pb-3 z-10">
+    <div className="min-h-screen max-w-lg mx-auto rise-in">
+      <div className="sticky top-0 bg-[#fafaf8]/82 backdrop-blur-xl border-b border-[#f0ede8] px-4 pt-4 pb-3 z-10">
         <div className="flex items-center gap-3 mb-3">
           <Link href="/paises" className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#f0ede8]">
             <ChevronLeft size={18} />
           </Link>
-          <span className="text-3xl">{country.flagEmoji}</span>
+          <motion.span
+            initial={{ scale: 0.8, rotate: -8 }}
+            animate={{ scale: 1, rotate: 0 }}
+            className="text-3xl"
+          >
+            {country.flagEmoji}
+          </motion.span>
           <div>
             <h1 className="text-lg font-bold leading-tight">{country.name}</h1>
             <p className="text-xs text-[#78716c]">Euro desde {country.yearJoined}</p>
@@ -82,7 +89,12 @@ export function CountryDetailClient({
           </div>
         </div>
         <div className="h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden mb-3">
-          <div className="h-full bg-[#e8a020] rounded-full" style={{ width: `${pct}%` }} />
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.75, ease: "easeOut" }}
+            className="h-full bg-[#e8a020] rounded-full"
+          />
         </div>
         <div className="flex bg-[#f5f3ef] rounded-xl p-1 gap-1">
           {(["regular", "commemorative"] as const).map(t => (
@@ -90,22 +102,49 @@ export function CountryDetailClient({
               key={t}
               onClick={() => setTab(t)}
               className={cn(
-                "flex-1 py-2 rounded-lg text-sm font-medium transition-all",
-                tab === t ? "bg-white shadow-sm text-[#1a1a1a]" : "text-[#78716c]"
+                "relative flex-1 py-2 rounded-lg text-sm font-medium transition-all",
+                tab === t ? "text-[#1a1a1a]" : "text-[#78716c]"
               )}
             >
-              {t === "regular" ? `Regulares (${regularCoins.length})` : `Conmem. (${commCoins.length})`}
+              {tab === t && (
+                <motion.span
+                  layoutId="country-tab"
+                  className="absolute inset-0 rounded-lg bg-white shadow-sm"
+                  transition={{ type: "spring", stiffness: 430, damping: 32 }}
+                />
+              )}
+              <span className="relative">
+                {t === "regular" ? `Regulares (${regularCoins.length})` : `Conmem. (${commCoins.length})`}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
       <div className="px-4 py-3">
-        {tab === "regular" ? (
-          <RegularGrid coins={regularCoins} onToggle={toggle} onYearWishlist={toggleYearWishlist} onYearOwned={toggleYearOwned} disabled={pending} />
-        ) : (
-          <CommList coins={commCoins} onToggle={toggle} disabled={pending} />
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          {tab === "regular" ? (
+            <motion.div
+              key="regular"
+              initial={false}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.22 }}
+            >
+              <RegularGrid coins={regularCoins} onToggle={toggle} onYearWishlist={toggleYearWishlist} onYearOwned={toggleYearOwned} disabled={pending} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="commemorative"
+              initial={false}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ duration: 0.22 }}
+            >
+              <CommList coins={commCoins} onToggle={toggle} disabled={pending} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -134,7 +173,10 @@ function RegularGrid({ coins, onToggle, onYearWishlist, onYearOwned, disabled }:
         const complete   = owned === yearCoins.length;
 
         return (
-          <div key={year}>
+          <div
+            key={year}
+            className="rise-in"
+          >
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2">
                 <h3 className={cn(
@@ -200,13 +242,14 @@ function CoinTile({ coin, onToggle, disabled }: {
   coin: CoinWithStatus; onToggle: (id: number, s: "OWNED" | "WISHLIST") => void; disabled: boolean;
 }) {
   return (
-    <button
+    <motion.button
       disabled={disabled}
       onClick={() => onToggle(coin.id, "OWNED")}
+      whileTap={{ scale: 0.9 }}
       className={cn(
         "relative aspect-square rounded-2xl border-2 flex flex-col items-center justify-center transition-all coin-card",
         coin.owned
-          ? "bg-[#e8a020] border-[#e8a020] text-white shadow-md"
+          ? "bg-[#e8a020] border-[#e8a020] text-white shadow-md coin-shine"
           : coin.wishlisted
             ? "bg-violet-50 border-violet-300 text-violet-500"
             : "bg-white border-[#f0ede8] text-[#78716c]"
@@ -217,7 +260,7 @@ function CoinTile({ coin, onToggle, disabled }: {
         <Heart size={9} className="absolute top-1.5 right-1.5 fill-violet-400 text-violet-400" />
       )}
       <span className="text-xs font-bold">{formatDenomination(coin.denomination)}</span>
-    </button>
+    </motion.button>
   );
 }
 
@@ -253,13 +296,14 @@ function CommList({ coins, onToggle, disabled }: {
         </p>
       )}
       <div className="space-y-2">
-        {filtered.map(coin => (
+        {filtered.map((coin, index) => (
           <div
             key={coin.id}
             className={cn(
-              "bg-white rounded-2xl border px-4 py-3 flex items-center gap-3 transition-all",
+              "bg-white rounded-2xl border px-4 py-3 flex items-center gap-3 transition-all rise-in",
               coin.owned ? "border-[#e8a020]/40 bg-[#fef9ee]" : "border-[#f0ede8]"
             )}
+            style={{ animationDelay: `${index * 25}ms` }}
           >
             <div className={cn(
               "w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 text-sm font-bold",

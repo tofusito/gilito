@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { Heart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { formatDenomination } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 type WishItem = {
   ucId: number; coinId: number; denomination: number; year: number;
@@ -28,7 +29,7 @@ export function WishlistClient({ items }: { items: WishItem[] }) {
   }
 
   return (
-    <div className="min-h-screen px-4 pt-6 pb-4 max-w-lg mx-auto">
+    <div className="min-h-screen px-4 pt-6 pb-4 max-w-lg mx-auto rise-in">
       <div className="flex items-center gap-2 mb-6">
         <Heart size={22} className="text-violet-400" fill="currentColor" />
         <h1 className="text-2xl font-bold tracking-tight">Lista de deseos</h1>
@@ -36,7 +37,12 @@ export function WishlistClient({ items }: { items: WishItem[] }) {
 
       {items.length === 0 ? (
         <div className="text-center py-16">
-          <Heart size={40} className="mx-auto text-[#f0ede8] mb-3" />
+          <motion.div
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity }}
+          >
+            <Heart size={40} className="mx-auto text-[#f0ede8] mb-3" />
+          </motion.div>
           <p className="text-[#78716c] font-medium">Tu lista de deseos está vacía</p>
           <p className="text-sm text-[#78716c]/70 mt-1">Marca monedas con ♥ para añadirlas aquí</p>
           <Link
@@ -48,10 +54,11 @@ export function WishlistClient({ items }: { items: WishItem[] }) {
         </div>
       ) : (
         <div className="space-y-2">
-          {items.map(item => (
+          {items.map((item, index) => (
             <div
               key={item.ucId}
-              className="bg-white rounded-2xl border border-[#f0ede8] px-4 py-3.5 flex items-center gap-3"
+              className="bg-white/92 rounded-2xl border border-[#f0ede8] px-4 py-3.5 flex items-center gap-3 coin-card rise-in"
+              style={{ animationDelay: `${index * 35}ms` }}
             >
               <span className="text-2xl">{item.countryFlag}</span>
               <div className="flex-1 min-w-0">
