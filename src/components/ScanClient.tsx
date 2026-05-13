@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Camera, Sparkles, Check, Loader2, AlertCircle, X, RefreshCcw } from "lucide-react";
+import { BadgeCheck, CalendarDays, Camera, Check, Coins, Loader2, PlusCircle, RefreshCcw, Sparkles, X, AlertCircle } from "lucide-react";
 import { cn, formatDenomination } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,6 +21,7 @@ export function ScanClient() {
   const [result, setResult]   = useState<ScanResult | null>(null);
   const [error, setError]     = useState<string | null>(null);
   const [added, setAdded]     = useState(false);
+  const [saving, setSaving]   = useState(false);
   const [phase, setPhase]     = useState<Phase>("idle");
   const fileRef = useRef<HTMLInputElement>(null);
   const router  = useRouter();
@@ -33,6 +34,7 @@ export function ScanClient() {
       setResult(null);
       setError(null);
       setAdded(false);
+      setSaving(false);
       setPhase("preview");
     };
     reader.readAsDataURL(file);
@@ -43,6 +45,7 @@ export function ScanClient() {
     setPhase("loading");
     setError(null);
     setResult(null);
+    setSaving(false);
 
     const base64 = image.split(",")[1];
     try {
@@ -64,32 +67,37 @@ export function ScanClient() {
   async function addToCollection() {
     if (!result) return;
 
-    // coinId ya resuelto por el scan — si no, fallback a /api/coins/find
-    let coinId = result.coinId ?? null;
-    if (!coinId) {
-      const res  = await fetch("/api/coins/find", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          countryCode: result.countryCode,
-          denomination: result.denomination,
-          year: result.year,
-          isCommemorative: result.isCommemorative,
-          description: result.description,
-        }),
-      });
-      const data = await res.json() as { coinId?: number; error?: string };
-      coinId = data.coinId ?? null;
-    }
+    setSaving(true);
+    try {
+      // coinId ya resuelto por el scan; si no, fallback a /api/coins/find
+      let coinId = result.coinId ?? null;
+      if (!coinId) {
+        const res  = await fetch("/api/coins/find", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            countryCode: result.countryCode,
+            denomination: result.denomination,
+            year: result.year,
+            isCommemorative: result.isCommemorative,
+            description: result.description,
+          }),
+        });
+        const data = await res.json() as { coinId?: number; error?: string };
+        coinId = data.coinId ?? null;
+      }
 
-    if (coinId) {
-      await fetch("/api/coins/toggle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coinId, status: "OWNED" }),
-      });
-      setAdded(true);
-      router.refresh();
+      if (coinId) {
+        await fetch("/api/coins/toggle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ coinId, status: "OWNED" }),
+        });
+        setAdded(true);
+        router.refresh();
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -98,6 +106,7 @@ export function ScanClient() {
     setResult(null);
     setError(null);
     setAdded(false);
+    setSaving(false);
     setPhase("idle");
   }
 
@@ -170,7 +179,20 @@ export function ScanClient() {
 
           {/* Panel inferior */}
           <div className="bg-[#fafaf8] px-6 pt-5 pb-8">
-            <p className="text-center text-sm text-[#78716c] mb-4">Imagen cargada correctamente</p>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <p className="text-center text-sm font-medium text-[#1a1a1a]">Imagen lista para analizar</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="rounded-2xl bg-white border border-[#f0ede8] px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-[#78716c] font-semibold">Sugerencia</p>
+                <p className="text-xs font-medium mt-0.5">Moneda centrada</p>
+              </div>
+              <div className="rounded-2xl bg-white border border-[#f0ede8] px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-[#78716c] font-semibold">Luz</p>
+                <p className="text-xs font-medium mt-0.5">Sin reflejos fuertes</p>
+              </div>
+            </div>
             <button
               onClick={scan}
               className="w-full py-4 bg-[#1a1a1a] text-white rounded-2xl font-semibold flex items-center justify-center gap-2 text-base shadow-md coin-card"
@@ -250,10 +272,9 @@ export function ScanClient() {
           exit={{ opacity: 0, y: -16 }}
           className="flex-1 flex flex-col"
         >
-          <div className="relative bg-[#1a1a1a] flex items-center justify-center" style={{ height: 260 }}>
+          <div className="relative bg-[#1a1a1a] flex items-center justify-center scan-grid overflow-hidden" style={{ height: 280 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt="Moneda" className="w-full h-full object-contain" />
-            {/* Badge de confianza */}
+            <img src={image} alt="Moneda" className="w-full h-full object-contain opacity-85" />
             <div className={cn(
               "absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-sm",
               result.confidence >= 80 ? "bg-emerald-500/90 text-white"
@@ -268,54 +289,77 @@ export function ScanClient() {
             >
               <X size={16} />
             </button>
+            <motion.div
+              initial={{ scale: 0.72, y: 22, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 18 }}
+              className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-28 h-28 rounded-full bg-[#e8a020] border-[6px] border-[#fafaf8] shadow-2xl coin-shine flex flex-col items-center justify-center text-white"
+            >
+              <Coins size={20} className="mb-1 opacity-90" />
+              <span className="text-2xl font-black leading-none">{formatDenomination(result.denomination)}</span>
+              <span className="text-[10px] font-semibold opacity-85 mt-1">{result.year}</span>
+            </motion.div>
           </div>
 
           {/* Bottom sheet */}
-          <div className="flex-1 bg-[#fafaf8] rounded-t-3xl -mt-4 px-5 pt-5 pb-8 shadow-[0_-8px_32px_rgba(0,0,0,0.08)]">
+          <div className="flex-1 bg-[#fafaf8] rounded-t-3xl -mt-4 px-5 pt-16 pb-8 shadow-[0_-8px_32px_rgba(0,0,0,0.08)]">
             {/* Handle */}
             <div className="w-10 h-1 bg-[#e5e1db] rounded-full mx-auto mb-4" />
 
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-[11px] text-[#78716c] font-medium uppercase tracking-wider">Moneda identificada</p>
-                <h2 className="text-xl font-bold leading-tight mt-0.5">{result.country}</h2>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-[#e8a020] flex items-center justify-center shrink-0 coin-shine">
-                <span className="text-white font-bold text-sm">{formatDenomination(result.denomination)}</span>
-              </div>
+            <div className="text-center mb-4">
+              <p className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold uppercase tracking-wider bg-emerald-50 px-3 py-1.5 rounded-full">
+                <BadgeCheck size={13} />
+                Moneda identificada
+              </p>
+              <h2 className="text-2xl font-black tracking-tight mt-3 leading-tight">{result.country}</h2>
+              <p className="text-sm text-[#78716c] mt-1">
+                {result.isCommemorative ? "Edición conmemorativa" : "Emisión regular"}
+              </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2 mb-4">
-              <InfoBlock label="Valor" value={formatDenomination(result.denomination)} />
-              <InfoBlock label="Año" value={String(result.year)} />
-              <InfoBlock label="Tipo" value={result.isCommemorative ? "Conmem." : "Regular"} />
+              <InfoBlock icon={<Coins size={15} />} label="Valor" value={formatDenomination(result.denomination)} />
+              <InfoBlock icon={<CalendarDays size={15} />} label="Año" value={String(result.year)} />
+              <InfoBlock icon={<Sparkles size={15} />} label="IA" value={`${result.confidence}%`} />
             </div>
 
             <div className="bg-[#fef9ee] border border-[#e8a020]/20 rounded-2xl px-4 py-3 mb-4">
-              <p className="text-[10px] text-[#b45309] font-semibold uppercase tracking-wider mb-1">Descripción</p>
+              <p className="flex items-center gap-1.5 text-[10px] text-[#b45309] font-semibold uppercase tracking-wider mb-1">
+                <Sparkles size={12} />
+                Detalle reconocido
+              </p>
               <p className="text-sm text-[#1a1a1a] leading-relaxed">
                 {result.description ?? "Sin descripción disponible"}
               </p>
             </div>
 
             {added ? (
-              <div className="flex items-center justify-center gap-2 py-4 bg-emerald-50 rounded-2xl text-emerald-600 font-semibold">
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="relative overflow-hidden flex items-center justify-center gap-2 py-4 bg-emerald-50 rounded-2xl text-emerald-600 font-semibold"
+              >
+                <span className="coin-burst">
+                  <span /><span /><span /><span /><span /><span /><span />
+                </span>
                 <Check size={18} />
                 Añadida a tu colección
-              </div>
+              </motion.div>
             ) : (
-              <div className="flex gap-3">
-                <button
-                  onClick={reset}
-                  className="flex-1 py-3.5 rounded-2xl border border-[#f0ede8] text-[#78716c] font-medium text-sm"
-                >
-                  Otra foto
-                </button>
+              <div className="space-y-3">
                 <button
                   onClick={addToCollection}
-                  className="flex-1 py-3.5 rounded-2xl bg-[#e8a020] text-white font-semibold text-sm shadow-md coin-card"
+                  disabled={saving}
+                  className="w-full py-4 rounded-2xl bg-[#e8a020] text-white font-semibold text-sm shadow-md coin-card flex items-center justify-center gap-2 disabled:opacity-70"
                 >
-                  Añadir a colección
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />}
+                  {saving ? "Añadiendo..." : "Añadir a colección"}
+                </button>
+                <button
+                  onClick={reset}
+                  className="w-full py-3.5 rounded-2xl border border-[#f0ede8] text-[#78716c] font-medium text-sm"
+                >
+                  Escanear otra moneda
                 </button>
               </div>
             )}
@@ -327,9 +371,10 @@ export function ScanClient() {
   );
 }
 
-function InfoBlock({ label, value }: { label: string; value: string }) {
+function InfoBlock({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
     <div className="bg-[#f5f3ef] rounded-xl p-3 text-center">
+      {icon && <div className="mx-auto mb-1.5 w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e8a020]">{icon}</div>}
       <p className="text-[10px] text-[#78716c] uppercase tracking-wider font-medium mb-0.5">{label}</p>
       <p className="text-sm font-bold">{value}</p>
     </div>

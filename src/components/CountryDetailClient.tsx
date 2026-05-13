@@ -25,6 +25,7 @@ export function CountryDetailClient({
   commCoins: CoinWithStatus[];
 }) {
   const [tab, setTab] = useState<"regular" | "commemorative">("regular");
+  const [burst, setBurst] = useState<{ id: number; kind: "OWNED" | "WISHLIST"; nonce: number } | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -33,6 +34,7 @@ export function CountryDetailClient({
   const pct = totalCoins > 0 ? Math.round((totalOwned / totalCoins) * 100) : 0;
 
   function toggle(coinId: number, status: "OWNED" | "WISHLIST") {
+    setBurst({ id: coinId, kind: status, nonce: Date.now() });
     startTransition(async () => {
       await fetch("/api/coins/toggle", {
         method: "POST",
@@ -131,7 +133,7 @@ export function CountryDetailClient({
               exit={{ opacity: 0, x: 12 }}
               transition={{ duration: 0.22 }}
             >
-              <RegularGrid coins={regularCoins} onToggle={toggle} onYearWishlist={toggleYearWishlist} onYearOwned={toggleYearOwned} disabled={pending} />
+              <RegularGrid coins={regularCoins} onToggle={toggle} onYearWishlist={toggleYearWishlist} onYearOwned={toggleYearOwned} disabled={pending} burst={burst} />
             </motion.div>
           ) : (
             <motion.div
@@ -141,7 +143,7 @@ export function CountryDetailClient({
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.22 }}
             >
-              <CommList coins={commCoins} onToggle={toggle} disabled={pending} />
+              <CommList coins={commCoins} onToggle={toggle} disabled={pending} burst={burst} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -150,12 +152,13 @@ export function CountryDetailClient({
   );
 }
 
-function RegularGrid({ coins, onToggle, onYearWishlist, onYearOwned, disabled }: {
+function RegularGrid({ coins, onToggle, onYearWishlist, onYearOwned, disabled, burst }: {
   coins: CoinWithStatus[];
   onToggle: (id: number, s: "OWNED" | "WISHLIST") => void;
   onYearWishlist: (ids: number[]) => void;
   onYearOwned: (ids: number[]) => void;
   disabled: boolean;
+  burst: { id: number; kind: "OWNED" | "WISHLIST"; nonce: number } | null;
 }) {
   const byYear = coins.reduce<Record<number, CoinWithStatus[]>>((acc, c) => {
     if (!acc[c.year]) acc[c.year] = [];
@@ -228,7 +231,7 @@ function RegularGrid({ coins, onToggle, onYearWishlist, onYearOwned, disabled }:
 
             <div className="grid grid-cols-4 gap-2">
               {yearCoins.map(coin => (
-                <CoinTile key={coin.id} coin={coin} onToggle={onToggle} disabled={disabled} />
+                <CoinTile key={coin.id} coin={coin} onToggle={onToggle} disabled={disabled} burst={burst} />
               ))}
             </div>
           </div>
@@ -238,14 +241,21 @@ function RegularGrid({ coins, onToggle, onYearWishlist, onYearOwned, disabled }:
   );
 }
 
-function CoinTile({ coin, onToggle, disabled }: {
-  coin: CoinWithStatus; onToggle: (id: number, s: "OWNED" | "WISHLIST") => void; disabled: boolean;
+function CoinTile({ coin, onToggle, disabled, burst }: {
+  coin: CoinWithStatus;
+  onToggle: (id: number, s: "OWNED" | "WISHLIST") => void;
+  disabled: boolean;
+  burst: { id: number; kind: "OWNED" | "WISHLIST"; nonce: number } | null;
 }) {
+  const isBurst = burst?.id === coin.id;
+
   return (
     <motion.button
       disabled={disabled}
       onClick={() => onToggle(coin.id, "OWNED")}
-      whileTap={{ scale: 0.9 }}
+      whileTap={{ scale: 0.88 }}
+      animate={isBurst ? { scale: [1, 1.13, 0.98, 1], rotate: [0, -3, 3, 0] } : { scale: 1, rotate: 0 }}
+      transition={{ duration: 0.42 }}
       className={cn(
         "relative aspect-square rounded-2xl border-2 flex flex-col items-center justify-center transition-all coin-card",
         coin.owned
@@ -255,6 +265,23 @@ function CoinTile({ coin, onToggle, disabled }: {
             : "bg-white border-[#f0ede8] text-[#78716c]"
       )}
     >
+      <AnimatePresence>
+        {isBurst && burst.kind === "OWNED" && (
+          <motion.span
+            key={`ring-${burst.nonce}`}
+            initial={{ scale: 0.7, opacity: 0.55 }}
+            animate={{ scale: 1.55, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55 }}
+            className="absolute inset-0 rounded-2xl border-2 border-[#e8a020]"
+          />
+        )}
+      </AnimatePresence>
+      {isBurst && burst.kind === "OWNED" && (
+        <span key={`burst-${burst.nonce}`} className="coin-burst">
+          <span /><span /><span /><span /><span /><span /><span />
+        </span>
+      )}
       {coin.owned && <Check size={10} className="absolute top-1.5 right-1.5 opacity-80" />}
       {coin.wishlisted && !coin.owned && (
         <Heart size={9} className="absolute top-1.5 right-1.5 fill-violet-400 text-violet-400" />
@@ -264,8 +291,11 @@ function CoinTile({ coin, onToggle, disabled }: {
   );
 }
 
-function CommList({ coins, onToggle, disabled }: {
-  coins: CoinWithStatus[]; onToggle: (id: number, s: "OWNED" | "WISHLIST") => void; disabled: boolean;
+function CommList({ coins, onToggle, disabled, burst }: {
+  coins: CoinWithStatus[];
+  onToggle: (id: number, s: "OWNED" | "WISHLIST") => void;
+  disabled: boolean;
+  burst: { id: number; kind: "OWNED" | "WISHLIST"; nonce: number } | null;
 }) {
   const [query, setQuery] = useState("");
   const filtered = query.trim()
@@ -297,14 +327,21 @@ function CommList({ coins, onToggle, disabled }: {
       )}
       <div className="space-y-2">
         {filtered.map((coin, index) => (
-          <div
+          <motion.div
             key={coin.id}
+            animate={burst?.id === coin.id ? { scale: [1, 1.025, 1] } : { scale: 1 }}
+            transition={{ duration: 0.34 }}
             className={cn(
-              "bg-white rounded-2xl border px-4 py-3 flex items-center gap-3 transition-all rise-in",
+              "relative bg-white rounded-2xl border px-4 py-3 flex items-center gap-3 transition-all rise-in",
               coin.owned ? "border-[#e8a020]/40 bg-[#fef9ee]" : "border-[#f0ede8]"
             )}
             style={{ animationDelay: `${index * 25}ms` }}
           >
+            {burst?.id === coin.id && burst.kind === "OWNED" && (
+              <span key={`comm-burst-${burst.nonce}`} className="coin-burst">
+                <span /><span /><span /><span /><span /><span /><span />
+              </span>
+            )}
             <div className={cn(
               "w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 text-sm font-bold",
               coin.owned ? "border-[#e8a020] bg-[#e8a020] text-white" : "border-[#f0ede8] text-[#78716c]"
@@ -340,7 +377,7 @@ function CommList({ coins, onToggle, disabled }: {
                 <Check size={15} />
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

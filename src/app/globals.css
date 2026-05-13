@@ -100,6 +100,31 @@ body {
   animation: rise-in 420ms ease-out both;
 }
 
+.coin-burst {
+  pointer-events: none;
+  position: absolute;
+  inset: -10px;
+}
+
+.coin-burst span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: coin-burst 620ms ease-out forwards;
+}
+
+.coin-burst span:nth-child(1) { --x: -32px; --y: -30px; }
+.coin-burst span:nth-child(2) { --x: 0px; --y: -40px; background: #10b981; }
+.coin-burst span:nth-child(3) { --x: 32px; --y: -28px; }
+.coin-burst span:nth-child(4) { --x: 38px; --y: 4px; background: #8b5cf6; }
+.coin-burst span:nth-child(5) { --x: 18px; --y: 36px; }
+.coin-burst span:nth-child(6) { --x: -22px; --y: 34px; background: #10b981; }
+.coin-burst span:nth-child(7) { --x: -40px; --y: 4px; }
+
 @keyframes coin-shine {
   0%, 58% { transform: translateX(0) rotate(18deg); opacity: 0; }
   68% { opacity: 1; }
@@ -119,6 +144,17 @@ body {
 @keyframes rise-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes coin-burst {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
