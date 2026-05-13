@@ -32,6 +32,9 @@ export function runMigrations() {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_coins_unique
       ON coins(country_id, denomination, year, type, COALESCE(description, ''));
 
+    CREATE INDEX IF NOT EXISTS idx_coins_country_id
+      ON coins(country_id);
+
     CREATE TABLE IF NOT EXISTS user_coins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id),
@@ -49,6 +52,12 @@ export function runMigrations() {
       UNIQUE(user_id, coin_id)
     );
 
+    CREATE INDEX IF NOT EXISTS idx_user_coins_user_id
+      ON user_coins(user_id);
+
+    CREATE INDEX IF NOT EXISTS idx_user_coins_coin_id
+      ON user_coins(coin_id);
+
     CREATE TABLE IF NOT EXISTS achievements (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id),
@@ -56,5 +65,8 @@ export function runMigrations() {
       unlocked_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(user_id, key)
     );
+
+    CREATE INDEX IF NOT EXISTS idx_achievements_user_id
+      ON achievements(user_id);
   `);
 }
