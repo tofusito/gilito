@@ -69,9 +69,9 @@ export function CountryDetailClient({
 
   return (
     <div className="min-h-screen max-w-lg mx-auto rise-in">
-      <div className="sticky top-0 bg-[#fafaf8]/82 backdrop-blur-xl border-b border-[#f0ede8] px-4 pt-4 pb-3 z-10">
+      <div className="sticky top-0 bg-[#fafaf8]/72 backdrop-blur-2xl border-b border-white/50 px-4 pt-4 pb-3 z-10">
         <div className="flex items-center gap-3 mb-3">
-          <Link href="/paises" className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#f0ede8]">
+          <Link href="/paises" className="glass-button w-10 h-10 flex items-center justify-center rounded-2xl text-[#1a1a1a]">
             <ChevronLeft size={18} />
           </Link>
           <motion.span
@@ -98,24 +98,35 @@ export function CountryDetailClient({
             className="h-full bg-[#e8a020] rounded-full"
           />
         </div>
-        <div className="flex bg-[#f5f3ef] rounded-xl p-1 gap-1">
+        <div className="segment-shell flex gap-1">
           {(["regular", "commemorative"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={cn(
-                "relative flex-1 py-2 rounded-lg text-sm font-medium transition-all",
-                tab === t ? "text-[#1a1a1a]" : "text-[#78716c]"
+                "relative flex-1 py-2.5 rounded-[0.8rem] text-sm font-semibold transition-all",
+                tab === t ? "text-[#0f172a]" : "text-[#6b7280]"
               )}
             >
               {tab === t && (
                 <motion.span
                   layoutId="country-tab"
-                  className="absolute inset-0 rounded-lg bg-white shadow-sm"
+                  className="absolute inset-0 rounded-[0.8rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(255,255,255,0.62))] shadow-[0_12px_28px_rgba(41,37,36,0.12)]"
                   transition={{ type: "spring", stiffness: 430, damping: 32 }}
                 />
               )}
-              <span className="relative">
+              {tab === t && (
+                <motion.span
+                  layoutId="country-tab-glow"
+                  className={cn(
+                    "absolute inset-0 rounded-[0.8rem] opacity-60 blur-md",
+                    t === "regular" ? "bg-[#4cc9f0]/30" : "bg-[#e8a020]/28"
+                  )}
+                  transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                />
+              )}
+              <span className="relative flex items-center justify-center gap-1.5">
+                <span className={cn("w-1.5 h-1.5 rounded-full", t === "regular" ? "bg-[#4cc9f0]" : "bg-[#e8a020]")} />
                 {t === "regular" ? `Regulares (${regularCoins.length})` : `Conmem. (${commCoins.length})`}
               </span>
             </button>

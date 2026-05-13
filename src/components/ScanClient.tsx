@@ -131,6 +131,10 @@ export function ScanClient() {
           exit={{ opacity: 0, y: -14 }}
           className="flex-1 flex flex-col items-center justify-center px-8 pb-24 gap-8"
         >
+          <div className="absolute inset-x-6 top-8 rounded-[2rem] scan-panel px-4 py-3 text-center">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#9ca3af]">Scanner Lab</p>
+            <p className="text-sm font-medium text-[#374151] mt-1">Detecta, confirma y añade en segundos.</p>
+          </div>
           <div className="flex flex-col items-center gap-4 text-center">
             <motion.div
               animate={{ y: [0, -6, 0], rotate: [0, -2, 2, 0] }}
@@ -178,31 +182,31 @@ export function ScanClient() {
           </div>
 
           {/* Panel inferior */}
-          <div className="bg-[#fafaf8] px-6 pt-5 pb-8">
+          <div className="scan-panel rounded-t-[2rem] px-6 pt-5 pb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <p className="text-center text-sm font-medium text-[#1a1a1a]">Imagen lista para analizar</p>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="rounded-2xl bg-white border border-[#f0ede8] px-3 py-2">
+              <div className="glass-button rounded-2xl px-3 py-2">
                 <p className="text-[10px] uppercase tracking-wider text-[#78716c] font-semibold">Sugerencia</p>
                 <p className="text-xs font-medium mt-0.5">Moneda centrada</p>
               </div>
-              <div className="rounded-2xl bg-white border border-[#f0ede8] px-3 py-2">
+              <div className="glass-button rounded-2xl px-3 py-2">
                 <p className="text-[10px] uppercase tracking-wider text-[#78716c] font-semibold">Luz</p>
                 <p className="text-xs font-medium mt-0.5">Sin reflejos fuertes</p>
               </div>
             </div>
             <button
               onClick={scan}
-              className="w-full py-4 bg-[#1a1a1a] text-white rounded-2xl font-semibold flex items-center justify-center gap-2 text-base shadow-md coin-card"
+              className="w-full py-4 bg-[linear-gradient(135deg,#1f2937,#111827)] text-white rounded-2xl font-semibold flex items-center justify-center gap-2 text-base shadow-[0_18px_34px_rgba(41,37,36,0.22)] coin-card"
             >
               <Sparkles size={18} />
               Identificar con IA
             </button>
             <button
               onClick={() => fileRef.current?.click()}
-              className="w-full mt-3 py-3 rounded-2xl border border-[#f0ede8] text-[#78716c] font-medium text-sm"
+              className="glass-button w-full mt-3 py-3 rounded-2xl text-[#78716c] font-medium text-sm"
             >
               Cambiar foto
             </button>
@@ -231,7 +235,7 @@ export function ScanClient() {
               <p className="text-white font-semibold text-base drop-shadow">Analizando con Gemini...</p>
             </div>
           </div>
-          <div className="bg-[#fafaf8] px-6 py-6">
+          <div className="scan-panel rounded-t-[2rem] px-6 py-6">
             <div className="h-12 rounded-2xl bg-[#f5f3ef] animate-pulse" />
           </div>
         </motion.div>
@@ -302,7 +306,7 @@ export function ScanClient() {
           </div>
 
           {/* Bottom sheet */}
-          <div className="flex-1 bg-[#fafaf8] rounded-t-3xl -mt-4 px-5 pt-16 pb-8 shadow-[0_-8px_32px_rgba(0,0,0,0.08)]">
+          <div className="scan-panel flex-1 rounded-t-3xl -mt-4 px-5 pt-16 pb-8 shadow-[0_-8px_32px_rgba(0,0,0,0.08)]">
             {/* Handle */}
             <div className="w-10 h-1 bg-[#e5e1db] rounded-full mx-auto mb-4" />
 
@@ -350,14 +354,14 @@ export function ScanClient() {
                 <button
                   onClick={addToCollection}
                   disabled={saving}
-                  className="w-full py-4 rounded-2xl bg-[#e8a020] text-white font-semibold text-sm shadow-md coin-card flex items-center justify-center gap-2 disabled:opacity-70"
+                  className="w-full py-4 rounded-2xl bg-[linear-gradient(135deg,#4cc9f0,#e8a020)] text-white font-semibold text-sm shadow-[0_18px_34px_rgba(76,201,240,0.24)] coin-card flex items-center justify-center gap-2 disabled:opacity-70"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <PlusCircle size={18} />}
                   {saving ? "Añadiendo..." : "Añadir a colección"}
                 </button>
                 <button
                   onClick={reset}
-                  className="w-full py-3.5 rounded-2xl border border-[#f0ede8] text-[#78716c] font-medium text-sm"
+                  className="glass-button w-full py-3.5 rounded-2xl text-[#78716c] font-medium text-sm"
                 >
                   Escanear otra moneda
                 </button>
@@ -373,8 +377,8 @@ export function ScanClient() {
 
 function InfoBlock({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-[#f5f3ef] rounded-xl p-3 text-center">
-      {icon && <div className="mx-auto mb-1.5 w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#e8a020]">{icon}</div>}
+    <div className="glass-button rounded-xl p-3 text-center">
+      {icon && <div className="mx-auto mb-1.5 w-7 h-7 rounded-full bg-white/88 flex items-center justify-center text-[#e8a020]">{icon}</div>}
       <p className="text-[10px] text-[#78716c] uppercase tracking-wider font-medium mb-0.5">{label}</p>
       <p className="text-sm font-bold">{value}</p>
     </div>

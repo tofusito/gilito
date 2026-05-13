@@ -31,19 +31,26 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <div className="min-h-screen px-4 pt-6 pb-4 max-w-lg mx-auto rise-in">
-      {/* Header */}
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-[#78716c] font-medium mb-0.5">Bienvenido</p>
-          <h1 className="text-3xl font-black tracking-tight">{user.name}</h1>
+      <div className="mb-5 rounded-[2rem] dashboard-card px-5 py-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-[#78716c] font-medium mb-1">Bienvenido</p>
+            <h1 className="text-4xl font-black tracking-tight leading-none text-gradient">{user.name}</h1>
+            <p className="text-sm text-[#6b7280] mt-2">Tu colección, tus series y tus siguientes objetivos.</p>
+          </div>
+          <motion.div
+            animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 3.4, repeat: Infinity, repeatDelay: 2.5 }}
+            className="w-14 h-14 rounded-[20px] bg-[#1a1a1a] text-[#e8a020] flex items-center justify-center shadow-[0_18px_36px_rgba(41,37,36,0.22)] coin-shine"
+          >
+            <Sparkles size={22} />
+          </motion.div>
         </div>
-        <motion.div
-          animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.05, 1] }}
-          transition={{ duration: 3.4, repeat: Infinity, repeatDelay: 2.5 }}
-          className="w-12 h-12 rounded-[18px] bg-[#1a1a1a] text-[#e8a020] flex items-center justify-center shadow-xl coin-shine"
-        >
-          <Sparkles size={21} />
-        </motion.div>
+      <div className="mt-5 grid grid-cols-3 gap-2">
+        <MiniMetric label="Deseos" value={wishlist} accent="text-violet-500" />
+        <MiniMetric label="Sets" value={completeYears} accent="text-[#e8a020]" />
+        <MiniMetric label="2€" value={ownedComm} accent="text-[#4cc9f0]" />
+      </div>
       </div>
 
       {/* Dos bloques de progreso separados */}
@@ -77,9 +84,11 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         >
         <Link
           href="/deseos"
-          className="flex items-center gap-3 bg-violet-50 border border-violet-100 rounded-2xl px-4 py-3 mb-5 coin-card"
+          className="list-card flex items-center gap-3 rounded-[1.45rem] px-4 py-3.5 mb-5 coin-card"
         >
-          <Heart size={18} className="text-violet-500" fill="currentColor" />
+          <div className="w-10 h-10 rounded-2xl bg-violet-100/90 flex items-center justify-center shadow-sm">
+            <Heart size={18} className="text-violet-500" fill="currentColor" />
+          </div>
           <p className="text-sm font-medium text-violet-700">
             Tienes <span className="font-bold">{wishlist}</span> moneda{wishlist !== 1 ? "s" : ""} en tu lista de deseos
           </p>
@@ -103,7 +112,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
       {sorted.length > 10 && (
         <Link
           href="/paises"
-          className="mt-3 flex items-center justify-center w-full py-3 rounded-2xl border border-[#f0ede8] text-sm text-[#78716c] font-medium bg-white"
+          className="list-card mt-3 flex items-center justify-center w-full py-3 rounded-[1.35rem] text-sm text-[#78716c] font-medium"
         >
           Ver {sorted.length - 10} países más
         </Link>
@@ -121,24 +130,32 @@ function ProgressBlock({
   pct: number; color: string; icon: string;
 }) {
   return (
-    <div className="surface rounded-[22px] p-4 coin-card rise-in">
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-base">{icon}</span>
-        <p className="text-xs text-[#78716c] font-medium">{label}</p>
+    <motion.div
+      whileTap={{ scale: 0.985 }}
+      className="dashboard-card rounded-[1.6rem] p-4 coin-card rise-in"
+    >
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">{icon}</span>
+          <p className="text-xs text-[#78716c] font-medium">{label}</p>
+        </div>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-[#9ca3af]">{sublabel}</span>
       </div>
-      <p className="text-3xl font-bold tabular-nums mb-0.5">
+      <p className="text-3xl font-black tabular-nums mb-0.5">
         {pct}<span className="text-xl text-[#78716c]">%</span>
       </p>
-      <div className="h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden my-2">
-        <div
+      <div className="h-2 bg-white/70 rounded-full overflow-hidden my-3 shadow-inner">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
           className="h-full rounded-full"
-          style={{ width: `${pct}%`, backgroundColor: color, transition: "width 900ms cubic-bezier(.2,.8,.2,1)" }}
+          style={{ backgroundColor: color }}
         />
       </div>
       <p className="text-[10px] text-[#78716c]">
         <span className="font-semibold" style={{ color }}>{value}</span> / {total} {sublabel}
       </p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -184,19 +201,19 @@ function BackupSection() {
   }
 
   return (
-    <div className="mt-6 border-t border-[#f0ede8] pt-5">
+    <div className="mt-6 pt-5 dashboard-card rounded-[1.7rem] px-4 pb-4">
       <p className="text-xs text-[#78716c] font-medium mb-3 uppercase tracking-wide">Copia de seguridad</p>
       <div className="flex gap-2">
         <button
           onClick={handleExport}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-[#f0ede8] text-sm font-medium text-[#44403c] shadow-sm active:scale-95 transition-transform"
+          className="glass-button flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium text-[#44403c] active:scale-95 transition-transform"
         >
           <Download size={15} /> Exportar
         </button>
         <button
           onClick={() => fileRef.current?.click()}
           disabled={busy}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white border border-[#f0ede8] text-sm font-medium text-[#44403c] shadow-sm active:scale-95 transition-transform disabled:opacity-50"
+          className="glass-button flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium text-[#44403c] active:scale-95 transition-transform disabled:opacity-50"
         >
           <Upload size={15} /> {busy ? "Importando..." : "Restaurar"}
         </button>
@@ -223,21 +240,27 @@ function CountryCard({ country: c, index }: { country: CountryStats; index: numb
     <div className="rise-in" style={{ animationDelay: `${120 + index * 35}ms` }}>
       <Link
         href={`/paises/${c.code.toLowerCase()}`}
-        className="flex items-center gap-3 bg-white/90 rounded-2xl px-4 py-3.5 shadow-sm border border-[#f0ede8] coin-card"
+        className="list-card flex items-center gap-3 rounded-[1.45rem] px-4 py-4 coin-card"
       >
-      <span className="text-2xl shrink-0">{c.flagEmoji}</span>
+      <div className="w-12 h-12 rounded-2xl bg-white/85 shadow-sm flex items-center justify-center shrink-0">
+        <span className="text-2xl">{c.flagEmoji}</span>
+      </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold mb-2">{c.name}</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold">{c.name}</p>
+          <span className="text-[10px] uppercase tracking-[0.16em] text-[#9ca3af]">{c.code}</span>
+        </div>
 
         {/* Fila series anuales */}
         <div className="flex items-center gap-2 mb-1.5">
           <span className="text-[10px] text-[#78716c] w-14 shrink-0">Anuales</span>
-          <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
-            <div
+          <div className="flex-1 h-1.5 bg-white/70 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${c.yearsPct}%` }}
               className="h-full rounded-full"
               style={{
-                width: `${c.yearsPct}%`,
                 backgroundColor: c.yearsPct >= 100 ? "#10b981" : "#e8a020",
               }}
             />
@@ -251,11 +274,12 @@ function CountryCard({ country: c, index }: { country: CountryStats; index: numb
         {c.totalComm > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-[#78716c] w-14 shrink-0">Conmem.</span>
-            <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
-              <div
+            <div className="flex-1 h-1.5 bg-white/70 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${c.commPct}%` }}
                 className="h-full rounded-full"
                 style={{
-                  width: `${c.commPct}%`,
                   backgroundColor: c.commPct >= 100 ? "#10b981" : "#8b5cf6",
                 }}
               />
@@ -269,6 +293,15 @@ function CountryCard({ country: c, index }: { country: CountryStats; index: numb
 
         <ArrowRight size={15} className="text-[#d4c9b8] shrink-0" />
       </Link>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value, accent }: { label: string; value: number; accent: string }) {
+  return (
+    <div className="rounded-2xl bg-white/68 border border-white/70 px-3 py-2.5 shadow-sm">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[#9ca3af]">{label}</p>
+      <p className={cn("text-lg font-black mt-1", accent)}>{value}</p>
     </div>
   );
 }

@@ -37,7 +37,7 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <h1 className={cn(
-          "text-2xl font-bold tracking-tight flex-1 transition-all duration-200 origin-left",
+          "text-2xl font-bold tracking-tight text-gradient flex-1 transition-all duration-200 origin-left",
           open ? "opacity-0 scale-x-95 pointer-events-none w-0 flex-none overflow-hidden" : "opacity-100"
         )}>
           Países
@@ -47,7 +47,7 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
           "flex-1 transition-all duration-200",
           open ? "opacity-100" : "opacity-0 w-0 pointer-events-none flex-none overflow-hidden"
         )}>
-          <div className="flex items-center gap-2 bg-[#f5f3ef] rounded-xl px-3 py-2">
+          <div className="glass-button flex items-center gap-2 rounded-2xl px-3 py-2.5">
             <Search size={15} className="text-[#78716c] shrink-0" />
             <input
               ref={inputRef}
@@ -67,10 +67,10 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
         <button
           onClick={toggleSearch}
           className={cn(
-            "w-9 h-9 rounded-full border flex items-center justify-center transition-all shrink-0",
+            "w-10 h-10 rounded-2xl flex items-center justify-center transition-all shrink-0",
             open
-              ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-              : "border-[#f0ede8] text-[#78716c] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+              ? "bg-[#1a1a1a] text-white shadow-[0_14px_28px_rgba(41,37,36,0.18)]"
+              : "glass-button text-[#78716c] hover:text-[#1a1a1a]"
           )}
         >
           {open ? <X size={15} /> : <Search size={15} />}
@@ -96,16 +96,19 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
       {/* Lista */}
       <div className="space-y-2.5">
         {filtered.map((c, index) => (
-          <div
+          <motion.div
             key={c.id}
             className="rise-in"
             style={{ animationDelay: `${Math.min(index * 18, 180)}ms` }}
+            whileTap={{ scale: 0.988 }}
           >
             <Link
               href={`/paises/${c.code.toLowerCase()}`}
-              className="flex items-center gap-3 bg-white/92 rounded-2xl px-4 py-4 shadow-sm border border-[#f0ede8] coin-card"
+              className="list-card flex items-center gap-3 rounded-[1.45rem] px-4 py-4 coin-card"
             >
-              <span className="text-3xl shrink-0">{c.flagEmoji}</span>
+              <div className="w-[3.25rem] h-[3.25rem] min-w-[3.25rem] rounded-[1.15rem] bg-white/86 shadow-sm flex items-center justify-center shrink-0">
+                <span className="text-3xl">{c.flagEmoji}</span>
+              </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-2.5">
@@ -113,12 +116,13 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
                     <p className="text-sm font-semibold">{c.name}</p>
                     <p className="text-[11px] text-[#78716c]">Euro desde {c.yearJoined}</p>
                   </div>
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-[#9ca3af]">{c.code}</span>
                 </div>
 
                 {/* Series anuales */}
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-[10px] text-[#78716c] w-10 shrink-0">Años</span>
-                  <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-white/72 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${c.yearsPct}%` }}
@@ -137,7 +141,7 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
                 {c.totalComm > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-[#78716c] w-10 shrink-0">Conmem.</span>
-                    <div className="flex-1 h-1.5 bg-[#f5f3ef] rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-white/72 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${c.commPct}%` }}
@@ -154,9 +158,9 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
                 )}
               </div>
 
-              <span className="text-[#d4c9b8] shrink-0">›</span>
+              <span className="w-8 h-8 rounded-full bg-white/70 flex items-center justify-center text-[#c7b9a4] shrink-0 shadow-sm">›</span>
             </Link>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className="h-full">
       <body className="h-full flex flex-col bg-[#fafaf8] text-[#1a1a1a] antialiased">
-        <main className="flex-1 overflow-y-auto pb-20">
+        <main className="app-shell flex-1 overflow-y-auto pb-32">
           {children}
         </main>
         <BottomNav />
