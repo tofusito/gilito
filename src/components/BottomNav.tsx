@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Globe, Trophy, ScanLine, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/",             label: "Inicio",      Icon: Home },
@@ -45,22 +45,24 @@ export function BottomNav() {
               {isScan ? (
                 <motion.div
                   whileTap={{ scale: 0.92 }}
-                  animate={active ? { y: -4, scale: 1.05 } : { y: -2, scale: 1 }}
+                  animate={active ? { scale: 1.03 } : { scale: 1 }}
+                  transition={{ type: "spring", stiffness: 340, damping: 24 }}
                   className={cn(
-                    "relative w-[4.35rem] h-[4.35rem] rounded-[1.6rem] flex items-center justify-center -mt-8 shadow-[0_18px_40px_rgba(41,37,36,0.24)] transition-all coin-shine dock-float",
+                    "relative w-[4.35rem] h-[4.35rem] rounded-[1.6rem] flex items-center justify-center -mt-8 shadow-[0_18px_40px_rgba(41,37,36,0.24)] transition-all coin-shine",
                     active
                       ? "bg-[linear-gradient(135deg,#4cc9f0,#e8a020)] scale-105"
                       : "bg-[linear-gradient(180deg,#1f2937,#111827)]"
                   )}
                 >
-                  {active && <span className="nav-ring ambient-pulse" />}
+                  {active && <span className="nav-ring opacity-60" />}
                   <span className="absolute inset-[1.5px] rounded-[1.45rem] border border-white/30" />
                   <Icon size={26} className="text-white" strokeWidth={1.6} />
                 </motion.div>
               ) : (
                 <motion.div
                   whileTap={{ scale: 0.94 }}
-                  animate={active ? { y: -3 } : { y: 0 }}
+                  animate={{ scale: active ? 1.02 : 1 }}
+                  transition={{ type: "spring", stiffness: 360, damping: 26 }}
                   className="relative w-12 h-12 flex items-center justify-center"
                 >
                   {active && (
@@ -79,17 +81,9 @@ export function BottomNav() {
                 </motion.div>
               )}
               {!isScan && (
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={active ? `${href}-active` : `${href}-idle`}
-                    initial={{ opacity: 0, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -3 }}
-                    className={cn("relative truncate", active ? "text-[#0f172a]" : "text-[#7c7468]")}
-                  >
-                    {label}
-                  </motion.span>
-                </AnimatePresence>
+                <span className={cn("relative truncate transition-colors", active ? "text-[#0f172a]" : "text-[#7c7468]")}>
+                  {label}
+                </span>
               )}
             </Link>
           );

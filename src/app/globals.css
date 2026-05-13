@@ -273,10 +273,6 @@ body::before {
   pointer-events: none;
 }
 
-.ambient-pulse {
-  animation: ambient-pulse 3.6s ease-in-out infinite;
-}
-
 .coin-shine {
   position: relative;
   overflow: hidden;
@@ -309,10 +305,6 @@ body::before {
 
 .rise-in {
   animation: rise-in 420ms ease-out both;
-}
-
-.dock-float {
-  animation: dock-float 4.6s ease-in-out infinite;
 }
 
 .text-gradient {
@@ -377,16 +369,6 @@ body::before {
     opacity: 0;
     transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.1);
   }
-}
-
-@keyframes dock-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-@keyframes ambient-pulse {
-  0%, 100% { opacity: 0.42; transform: scale(0.96); }
-  50% { opacity: 0.78; transform: scale(1.04); }
 }
 
 @media (prefers-reduced-motion: reduce) {
