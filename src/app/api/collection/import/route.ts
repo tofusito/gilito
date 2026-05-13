@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
   const existingUserCoins = new Map(
     db.select().from(userCoins).where(eq(userCoins.userId, user.id)).all().map(uc => [uc.coinId, uc])
   );
+  const importedCoinIds = new Set<number>();
 
   let imported = 0;
   let skipped = 0;
@@ -165,8 +166,14 @@ export async function POST(req: NextRequest) {
       const existing = existingUserCoins.get(coin.id);
       if (existing) {
         db.update(userCoins).set(values).where(eq(userCoins.id, existing.id)).run();
+      } else if (importedCoinIds.has(coin.id)) {
+        db.update(userCoins)
+          .set(values)
+          .where(and(eq(userCoins.userId, user.id), eq(userCoins.coinId, coin.id)))
+          .run();
       } else {
         db.insert(userCoins).values({ ...values, createdAt: now }).run();
+        importedCoinIds.add(coin.id);
       }
       imported++;
     }
