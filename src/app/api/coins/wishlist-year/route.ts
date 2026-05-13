@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db, getSqlite } from "@/db";
+import { db } from "@/db";
 import { coins, userCoins, users } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { isObject, jsonError, readJsonBody, validateCoinIds } from "@/lib/api";
@@ -38,23 +38,17 @@ export async function POST(req: NextRequest) {
   const allWishlisted = notOwned.length > 0 && notOwned.every(id => wishIds.has(id));
 
   if (allWishlisted) {
-    // Quitar de wishlist
-    getSqlite().transaction(() => {
-      for (const id of notOwned) {
-        db.delete(userCoins)
-          .where(and(eq(userCoins.userId, user.id), eq(userCoins.coinId, id)))
-          .run();
-      }
-    })();
+    db.delete(userCoins)
+      .where(and(eq(userCoins.userId, user.id), inArray(userCoins.coinId, notOwned)))
+      .run();
     return NextResponse.json({ action: "removed", count: notOwned.length });
   } else {
-    // Añadir las que no están aún (ni owned ni wishlisted)
     const toAdd = notOwned.filter(id => !wishIds.has(id));
-    getSqlite().transaction(() => {
-      for (const id of toAdd) {
-        db.insert(userCoins).values({ userId: user.id, coinId: id, status: "WISHLIST" }).run();
-      }
-    })();
+    if (toAdd.length > 0) {
+      db.insert(userCoins)
+        .values(toAdd.map(id => ({ userId: user.id, coinId: id, status: "WISHLIST" as const })))
+        .run();
+    }
     return NextResponse.json({ action: "added", count: toAdd.length });
   }
 }

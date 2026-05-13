@@ -31,28 +31,25 @@ export async function POST(req: NextRequest) {
   const allOwned = coinIds.length > 0 && coinIds.every(id => ownedIds.has(id));
 
   if (allOwned) {
+    db.delete(userCoins)
+      .where(and(eq(userCoins.userId, user.id), inArray(userCoins.coinId, coinIds)))
+      .run();
+    return NextResponse.json({ action: "removed", count: coinIds.length });
+  } else {
+    const toUpsert   = coinIds.filter(id => !ownedIds.has(id));
+    const toReplace  = toUpsert.filter(id => existing.some(e => e.coinId === id));
     getSqlite().transaction(() => {
-      for (const id of coinIds) {
+      if (toReplace.length > 0) {
         db.delete(userCoins)
-          .where(and(eq(userCoins.userId, user.id), eq(userCoins.coinId, id)))
+          .where(and(eq(userCoins.userId, user.id), inArray(userCoins.coinId, toReplace)))
+          .run();
+      }
+      if (toUpsert.length > 0) {
+        db.insert(userCoins)
+          .values(toUpsert.map(id => ({ userId: user.id, coinId: id, status: "OWNED" as const })))
           .run();
       }
     })();
-    return NextResponse.json({ action: "removed", count: coinIds.length });
-  } else {
-    getSqlite().transaction(() => {
-      for (const id of coinIds) {
-        if (ownedIds.has(id)) continue;
-        // Reemplazar wishlist si existe
-        const existingRow = existing.find(e => e.coinId === id);
-        if (existingRow) {
-          db.delete(userCoins)
-            .where(and(eq(userCoins.userId, user.id), eq(userCoins.coinId, id)))
-            .run();
-        }
-        db.insert(userCoins).values({ userId: user.id, coinId: id, status: "OWNED" }).run();
-      }
-    })();
-    return NextResponse.json({ action: "added", count: coinIds.length });
+    return NextResponse.json({ action: "added", count: toUpsert.length });
   }
 }

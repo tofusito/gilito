@@ -155,7 +155,7 @@ export function computeAchievements(userId: number): Achievement[] {
 
   // Emisiones comunes (misma conmemorativa en todos los países)
   for (const year of COMMON_ISSUE_YEARS) {
-    const yearComm = commCoins.filter(c => c.year === year && (c.isCommonIssue as unknown as number) === 1);
+    const yearComm = commCoins.filter(c => c.year === year && !!c.isCommonIssue);
     const ownedYear = yearComm.filter(c => ownedIds.has(c.id)).length;
     achs.push({
       key: `common_${year}`,

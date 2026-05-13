@@ -108,24 +108,36 @@ export async function POST(req: NextRequest) {
   const user = db.select().from(users).all()[0];
   if (!user) return NextResponse.json({ error: "Sin usuario" }, { status: 500 });
 
+  // Pre-cargar datasets para evitar N+1 dentro de la transacción
+  const countryByCode = new Map(
+    db.select().from(countries).all().map(c => [c.code, c])
+  );
+
+  const allCoins = db.select().from(coins).all();
+  // Clave: "countryId_denomination_year_type" → lista (puede haber varias conmemorativas)
+  const coinsByKey = new Map<string, typeof allCoins>();
+  for (const coin of allCoins) {
+    const k = `${coin.countryId}_${coin.denomination}_${coin.year}_${coin.type}`;
+    const list = coinsByKey.get(k) ?? [];
+    list.push(coin);
+    coinsByKey.set(k, list);
+  }
+
+  const existingUserCoins = new Map(
+    db.select().from(userCoins).where(eq(userCoins.userId, user.id)).all().map(uc => [uc.coinId, uc])
+  );
+
   let imported = 0;
   let skipped = 0;
+  const now = new Date().toISOString();
 
   getSqlite().transaction(() => {
     for (const entry of entries) {
-      const country = db.select().from(countries)
-        .where(eq(countries.code, entry.countryCode.toUpperCase())).all()[0];
+      const country = countryByCode.get(entry.countryCode.toUpperCase());
       if (!country) { skipped++; continue; }
 
-      // Buscar la moneda por clave natural
-      const coinRows = db.select().from(coins).where(
-        and(
-          eq(coins.countryId, country.id),
-          eq(coins.year, entry.year),
-          eq(coins.denomination, entry.denomination),
-          eq(coins.type, entry.type),
-        )
-      ).all();
+      const k = `${country.id}_${entry.denomination}_${entry.year}_${entry.type}`;
+      const coinRows = coinsByKey.get(k) ?? [];
 
       let coin = coinRows[0];
 
@@ -137,11 +149,6 @@ export async function POST(req: NextRequest) {
 
       if (!coin) { skipped++; continue; }
 
-      // Upsert: si ya existe la entrada, actualizarla; si no, insertar
-      const existing = db.select().from(userCoins).where(
-        and(eq(userCoins.userId, user.id), eq(userCoins.coinId, coin.id))
-      ).all()[0];
-
       const values = {
         userId:       user.id,
         coinId:       coin.id,
@@ -152,13 +159,14 @@ export async function POST(req: NextRequest) {
         acquiredAt:   entry.acquiredAt ?? null,
         acquiredFrom: entry.acquiredFrom ?? null,
         pricePaid:    entry.pricePaid ?? null,
-        updatedAt:    new Date().toISOString(),
+        updatedAt:    now,
       };
 
+      const existing = existingUserCoins.get(coin.id);
       if (existing) {
         db.update(userCoins).set(values).where(eq(userCoins.id, existing.id)).run();
       } else {
-        db.insert(userCoins).values({ ...values, createdAt: new Date().toISOString() }).run();
+        db.insert(userCoins).values({ ...values, createdAt: now }).run();
       }
       imported++;
     }

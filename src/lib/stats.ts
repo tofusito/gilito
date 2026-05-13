@@ -20,32 +20,37 @@ export type CountryStats = {
 };
 
 export function getCountryStats(userId: number): CountryStats[] {
+  // 3 queries totales en lugar de 2 por país
   const allCountries = db.select().from(countries).orderBy(countries.name).all();
+  const allCoins     = db.select().from(coins).all();
+  const ownedIds     = new Set(
+    db.select({ coinId: userCoins.coinId })
+      .from(userCoins)
+      .where(and(eq(userCoins.userId, userId), eq(userCoins.status, "OWNED")))
+      .all()
+      .map(uc => uc.coinId)
+  );
+
+  // Agrupar monedas por país para evitar filtros repetidos
+  const coinsByCountry = new Map<number, typeof allCoins>();
+  for (const coin of allCoins) {
+    let list = coinsByCountry.get(coin.countryId);
+    if (!list) { list = []; coinsByCountry.set(coin.countryId, list); }
+    list.push(coin);
+  }
 
   return allCountries.map(c => {
-    const allCoins = db.select().from(coins).where(eq(coins.countryId, c.id)).all();
+    const countryCoins = coinsByCountry.get(c.id) ?? [];
+    const regularCoins = countryCoins.filter(x => x.type === "REGULAR");
+    const commCoins    = countryCoins.filter(x => x.type === "COMMEMORATIVE");
 
-    const regularCoins = allCoins.filter(x => x.type === "REGULAR");
-    const commCoins    = allCoins.filter(x => x.type === "COMMEMORATIVE");
-
-    // Años únicos con monedas regulares
     const years = [...new Set(regularCoins.map(x => x.year))];
-
-    // Monedas que tiene el usuario de este país
-    const ownedIds = new Set(
-      db.select({ coinId: userCoins.coinId })
-        .from(userCoins)
-        .where(and(eq(userCoins.userId, userId), eq(userCoins.status, "OWNED")))
-        .all()
-        .filter(uc => allCoins.some(c => c.id === uc.coinId))
-        .map(uc => uc.coinId)
-    );
 
     let completeYears = 0;
     let partialYears  = 0;
 
     for (const year of years) {
-      const yearCoins = regularCoins.filter(x => x.year === year);
+      const yearCoins  = regularCoins.filter(x => x.year === year);
       const ownedCount = yearCoins.filter(x => ownedIds.has(x.id)).length;
       if (ownedCount === yearCoins.length && yearCoins.length > 0) completeYears++;
       else if (ownedCount > 0) partialYears++;
