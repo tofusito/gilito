@@ -1,6 +1,6 @@
 let initialized = false;
 
-export function initDb() {
+export async function initDb() {
   if (initialized) return;
   initialized = true;
 
@@ -8,8 +8,8 @@ export function initDb() {
   if (typeof window !== "undefined") return;
 
   try {
-    const { initializeDatabase } = require("@/db/seed");
-    initializeDatabase();
+    const { initializeDatabase } = await import("@/db/seed");
+    await initializeDatabase();
   } catch (e) {
     console.error("Error inicializando DB:", e);
   }

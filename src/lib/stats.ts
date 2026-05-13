@@ -19,8 +19,6 @@ export type CountryStats = {
   commPct: number;
 };
 
-const DENOMS_PER_YEAR = 8;
-
 export function getCountryStats(userId: number): CountryStats[] {
   const allCountries = db.select().from(countries).orderBy(countries.name).all();
 
@@ -80,15 +78,21 @@ export function getGlobalStats(userId: number) {
   const totalComm     = countryStats.reduce((s, c) => s + c.totalComm, 0);
   const ownedComm     = countryStats.reduce((s, c) => s + c.ownedComm, 0);
 
-  // Monedas regulares poseídas en total
-  const ownedRegular  = countryStats.reduce((s, c) => {
-    // hacky but works: completeYears * 8 + partial coins
-    return s + c.completeYears * DENOMS_PER_YEAR;
-  }, 0);
+  const ownedRegular = db
+    .select({ coinId: userCoins.coinId })
+    .from(userCoins)
+    .innerJoin(coins, eq(userCoins.coinId, coins.id))
+    .where(and(
+      eq(userCoins.userId, userId),
+      eq(userCoins.status, "OWNED"),
+      eq(coins.type, "REGULAR")
+    ))
+    .all().length;
 
   return {
     totalYears,
     completeYears,
+    ownedRegular,
     yearsPct: totalYears > 0 ? Math.round((completeYears / totalYears) * 100) : 0,
     totalComm,
     ownedComm,

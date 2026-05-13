@@ -1,16 +1,27 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { userCoins, users } from "@/db/schema";
+import { db, getSqlite } from "@/db";
+import { coins, userCoins, users } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
+import { isObject, jsonError, readJsonBody, validateCoinIds } from "@/lib/api";
 
 // Añade o quita de wishlist todas las monedas de un año de un país
 // Si ya están todas → las elimina. Si no → las añade (solo las que no estén owned)
 export async function POST(req: NextRequest) {
-  const { coinIds } = await req.json() as { coinIds: number[] };
+  const body = await readJsonBody(req);
+  if (!body.ok) return body.response;
+  if (!isObject(body.data)) return jsonError("Payload inválido");
+
+  const coinIds = validateCoinIds(body.data.coinIds);
+  if (!coinIds) return jsonError("Lista de monedas inválida");
 
   const user = db.select().from(users).limit(1).all()[0];
   if (!user) return NextResponse.json({ error: "No user" }, { status: 404 });
+
+  const validIds = new Set(
+    db.select({ id: coins.id }).from(coins).where(inArray(coins.id, coinIds)).all().map(c => c.id)
+  );
+  if (validIds.size !== coinIds.length) return jsonError("Alguna moneda no existe", 404);
 
   // Ver cuáles de estas monedas ya están en wishlist
   const existing = db.select().from(userCoins)
@@ -28,18 +39,22 @@ export async function POST(req: NextRequest) {
 
   if (allWishlisted) {
     // Quitar de wishlist
-    for (const id of notOwned) {
-      db.delete(userCoins)
-        .where(and(eq(userCoins.userId, user.id), eq(userCoins.coinId, id)))
-        .run();
-    }
+    getSqlite().transaction(() => {
+      for (const id of notOwned) {
+        db.delete(userCoins)
+          .where(and(eq(userCoins.userId, user.id), eq(userCoins.coinId, id)))
+          .run();
+      }
+    })();
     return NextResponse.json({ action: "removed", count: notOwned.length });
   } else {
     // Añadir las que no están aún (ni owned ni wishlisted)
     const toAdd = notOwned.filter(id => !wishIds.has(id));
-    for (const id of toAdd) {
-      db.insert(userCoins).values({ userId: user.id, coinId: id, status: "WISHLIST" }).run();
-    }
+    getSqlite().transaction(() => {
+      for (const id of toAdd) {
+        db.insert(userCoins).values({ userId: user.id, coinId: id, status: "WISHLIST" }).run();
+      }
+    })();
     return NextResponse.json({ action: "added", count: toAdd.length });
   }
 }

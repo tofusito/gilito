@@ -3,7 +3,7 @@ import { runMigrations } from "./migrate";
 import { users, countries, coins } from "./schema";
 import { COUNTRIES, DENOMINATIONS } from "./seed-countries";
 import { COMMEMORATIVE } from "./seed-commemorative";
-import { eq, count } from "drizzle-orm";
+import { count } from "drizzle-orm";
 
 export async function initializeDatabase() {
   runMigrations();

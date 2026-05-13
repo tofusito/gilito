@@ -2,14 +2,32 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { coins, countries } from "@/db/schema";
-import { eq, and, like } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import {
+  isCountryCode,
+  isDenomination,
+  isObject,
+  isString,
+  isYear,
+  jsonError,
+  readJsonBody,
+} from "@/lib/api";
 
 export async function POST(req: NextRequest) {
-  const { countryCode, denomination, year, isCommemorative, description } =
-    await req.json() as {
-      countryCode: string; denomination: number; year: number;
-      isCommemorative: boolean; description?: string;
-    };
+  const body = await readJsonBody(req);
+  if (!body.ok) return body.response;
+  if (!isObject(body.data)) return jsonError("Payload inválido");
+
+  const { countryCode, denomination, year, isCommemorative, description } = body.data;
+  if (
+    !isCountryCode(countryCode) ||
+    !isDenomination(denomination) ||
+    !isYear(year) ||
+    typeof isCommemorative !== "boolean" ||
+    (description !== undefined && !isString(description, 500))
+  ) {
+    return jsonError("Datos de moneda inválidos");
+  }
 
   const country = db.select().from(countries)
     .where(eq(countries.code, countryCode.toUpperCase())).all()[0];

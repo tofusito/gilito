@@ -11,6 +11,9 @@ services:
       - DATABASE_PATH=/app/data/gilito.db
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - AI_MODEL=${AI_MODEL:-gemini-2.0-flash-lite}
+      - SCAN_MAX_BYTES=${SCAN_MAX_BYTES:-6291456}
+      - GEMINI_TIMEOUT_MS=${GEMINI_TIMEOUT_MS:-15000}
+      - MAX_IMPORT_COINS=${MAX_IMPORT_COINS:-10000}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]

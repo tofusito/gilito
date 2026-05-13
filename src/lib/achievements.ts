@@ -27,7 +27,6 @@ export function computeAchievements(userId: number): Achievement[] {
   const regularCoins    = allCoins.filter(c => c.type === "REGULAR");
   const commCoins       = allCoins.filter(c => c.type === "COMMEMORATIVE");
   const ownedComm       = commCoins.filter(c => ownedIds.has(c.id)).length;
-  const ownedRegular    = regularCoins.filter(c => ownedIds.has(c.id)).length;
 
   // Helper: años completos (8 monedas) de un país
   function completeYearsForCountry(countryId: number) {

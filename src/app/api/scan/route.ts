@@ -3,8 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { coins, countries } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import {
+  base64ByteLength,
+  getEnvInt,
+  isCountryCode,
+  isObject,
+  isString,
+  isYear,
+  jsonError,
+  readJsonBody,
+} from "@/lib/api";
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
 const COUNTRY_CODES = [
   "AD","AT","BE","BG","CY","DE","EE","ES","FI","FR",
@@ -17,23 +28,92 @@ const DENOM_MAP: Record<string, number> = {
   "20c": 0.20, "50c": 0.50, "1€": 1.00, "2€": 2.00,
 };
 
-async function callGemini(apiKey: string, model: string, content: unknown) {
-  const res = await fetch(GEMINI_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content }],
-      temperature: 0.1,
-      max_tokens: 600,
-    }),
-  });
-  const data = await res.json() as {
-    choices?: Array<{ message: { content: string } }>;
-    error?: { message: string };
+async function callGemini(apiKey: string, model: string, content: unknown, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(GEMINI_ENDPOINT, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content }],
+        temperature: 0.1,
+        max_tokens: 600,
+      }),
+    });
+
+    let data: {
+      choices?: Array<{ message?: { content?: string } }>;
+      error?: { message?: string };
+    };
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Respuesta inválida de Gemini");
+    }
+
+    if (!res.ok || data.error) throw new Error(data.error?.message ?? "Error llamando a Gemini");
+
+    const contentText = data.choices?.[0]?.message?.content;
+    if (!contentText) throw new Error("Gemini no devolvió contenido");
+    return contentText.replace(/```json|```/g, "").trim();
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") throw new Error("Gemini tardó demasiado en responder");
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function validateStep1(value: unknown): {
+  error?: string;
+  year: number;
+  country: string;
+  countryName: string;
+  denomination: string;
+  isCommemorative: boolean;
+  description: string;
+  confidence: number;
+} | null {
+  if (!isObject(value)) return null;
+  if (typeof value.error === "string") {
+    return {
+      error: value.error,
+      year: 2002,
+      country: "ES",
+      countryName: "",
+      denomination: "1€",
+      isCommemorative: false,
+      description: "",
+      confidence: 0,
+    };
+  }
+  if (
+    !isYear(value.year) ||
+    !isCountryCode(value.country) ||
+    !isString(value.countryName, 100) ||
+    !isString(value.denomination, 10) ||
+    typeof value.isCommemorative !== "boolean" ||
+    !isString(value.description, 500) ||
+    typeof value.confidence !== "number" ||
+    value.confidence < 0 ||
+    value.confidence > 100
+  ) {
+    return null;
+  }
+
+  return {
+    year: value.year,
+    country: value.country.toUpperCase(),
+    countryName: value.countryName,
+    denomination: value.denomination,
+    isCommemorative: value.isCommemorative,
+    description: value.description,
+    confidence: value.confidence,
   };
-  if (data.error) throw new Error(data.error.message);
-  return (data.choices?.[0]?.message?.content ?? "").replace(/```json|```/g, "").trim();
 }
 
 export async function POST(req: NextRequest) {
@@ -42,9 +122,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "GEMINI_API_KEY no configurada" }, { status: 503 });
   }
 
-  const body     = await req.json() as { imageBase64: string; mimeType: string };
+  const scanMaxBytes = getEnvInt("SCAN_MAX_BYTES", 6 * 1024 * 1024);
+  const timeoutMs = getEnvInt("GEMINI_TIMEOUT_MS", 15000);
+  const body = await readJsonBody(req, { maxBytes: Math.ceil(scanMaxBytes * 1.5) + 1024 });
+  if (!body.ok) return body.response;
+  if (!isObject(body.data)) return jsonError("Payload inválido");
+
+  const { imageBase64, mimeType } = body.data;
+  if (
+    !isString(imageBase64, Math.ceil(scanMaxBytes * 1.5)) ||
+    !/^[A-Za-z0-9+/=]+$/.test(imageBase64) ||
+    !isString(mimeType, 40) ||
+    !ALLOWED_IMAGE_TYPES.has(mimeType)
+  ) {
+    return jsonError("Imagen inválida");
+  }
+  if (base64ByteLength(imageBase64) > scanMaxBytes) {
+    return jsonError("Imagen demasiado grande", 413);
+  }
+
   const model    = process.env.AI_MODEL ?? "gemini-2.0-flash-lite";
-  const imageUrl = `data:${body.mimeType};base64,${body.imageBase64}`;
+  const imageUrl = `data:${mimeType};base64,${imageBase64}`;
 
   // ── PASO 1: identificar la moneda ─────────────────────────────────────────
   const step1Prompt = `Identifica esta moneda de euro. Si no es una moneda de euro, responde: {"error": "No es una moneda de euro"}.
@@ -63,19 +161,14 @@ Responde SOLO con JSON válido:
   "confidence": número 0-100
 }`;
 
-  let step1: {
-    error?: string;
-    year: number; country: string; countryName: string;
-    denomination: string; isCommemorative: boolean;
-    description: string; confidence: number;
-  };
+  let step1: NonNullable<ReturnType<typeof validateStep1>>;
 
   try {
     const raw1 = await callGemini(apiKey, model, [
       { type: "text", text: step1Prompt },
       { type: "image_url", image_url: { url: imageUrl } },
-    ]);
-    step1 = JSON.parse(raw1);
+    ], timeoutMs);
+    step1 = validateStep1(JSON.parse(raw1)) ?? (() => { throw new Error("Gemini devolvió datos inválidos"); })();
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error identificando la moneda";
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -144,8 +237,8 @@ Responde SOLO con JSON: {"coinId": <número>}`;
       const raw2  = await callGemini(apiKey, model, [
         { type: "text", text: step2Prompt },
         { type: "image_url", image_url: { url: imageUrl } },
-      ]);
-      const match = JSON.parse(raw2) as { coinId: number | string };
+      ], timeoutMs);
+      const match = JSON.parse(raw2) as { coinId?: number | string };
       const found = candidates.find(c => c.id === Number(match.coinId));
       coinId = found?.id ?? candidates[0].id;
     } catch {

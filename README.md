@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gilito
 
-## Getting Started
+Aplicación sencilla para gestionar una colección personal de monedas euro. Está pensada para correr en un homelab detrás de Cloudflare Tunnel y Cloudflare Access.
 
-First, run the development server:
+## Desarrollo local
+
+Este proyecto usa `pnpm` fijado en `package.json`.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+corepack enable
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La app queda disponible en `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Despliegue homelab
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+El despliegue principal es `compose.yaml`. No publica el puerto de la app: el acceso externo debe pasar por el servicio `cloudflare` y por una política de Cloudflare Access.
 
-## Learn More
+Variables necesarias:
 
-To learn more about Next.js, take a look at the following resources:
+- `TUNNEL_TOKEN`: token del túnel de Cloudflare.
+- `GEMINI_API_KEY`: clave de Google AI Studio para el escaneo de monedas.
+- `AI_MODEL`: modelo Gemini. Por defecto, `gemini-2.0-flash-lite`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Variables opcionales de seguridad:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `SCAN_MAX_BYTES`: tamaño máximo de imagen para escaneo. Por defecto, `6291456`.
+- `GEMINI_TIMEOUT_MS`: timeout de Gemini. Por defecto, `15000`.
+- `MAX_IMPORT_COINS`: máximo de monedas aceptadas en un backup importado. Por defecto, `10000`.
 
-## Deploy on Vercel
+`docker-compose.yml` es solo para desarrollo/local: construye la imagen y publica `3030:3000`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Datos y backups
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+La base de datos SQLite vive en `/app/data/gilito.db` dentro del contenedor. En homelab se monta en `/home/tofu/docker/gilito/data`.
+
+La pantalla principal permite exportar e importar un backup JSON. La importación valida estructura, límites y campos antes de escribir, y aplica los cambios en una transacción para evitar restauraciones a medias.
+
+## Seguridad
+
+- Cloudflare Access es la barrera de autenticación. La app no incluye login propio.
+- Los endpoints de escritura validan `Content-Type`, tamaño de payload y campos esperados.
+- El escaneo con IA limita MIME, tamaño de imagen y tiempo máximo de respuesta.
+- No expongas el contenedor directamente a internet. Si necesitas acceso local, usa el compose local o una red privada.
+
+## Dependencias
+
+Se usa `pnpm` v10 para bloquear scripts de instalación por defecto y aprobar solo los necesarios.
+
+Reglas del repo:
+
+- No mezclar lockfiles: el lock válido es `pnpm-lock.yaml`.
+- No añadir dependencias nuevas sin revisar nombre, mantenedor, necesidad real y scripts de instalación.
+- Si una dependencia nueva necesita scripts de build, añadirla explícitamente en `pnpm.onlyBuiltDependencies`.
+- Si una dependencia declara scripts irrelevantes para este proyecto, añadirla en `pnpm.ignoredBuiltDependencies`.
+
+Comandos de verificación:
+
+```bash
+pnpm lint
+pnpm build
+pnpm audit --prod
+```

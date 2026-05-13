@@ -2,15 +2,17 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 # Dependencias para compilar módulos nativos (better-sqlite3)
 RUN apk add --no-cache python3 make g++ libc6-compat
-COPY package*.json ./
-RUN npm ci --only=production=false
+RUN corepack enable
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
+RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 FROM node:22-alpine AS runner
 WORKDIR /app

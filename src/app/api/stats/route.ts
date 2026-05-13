@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { coins, userCoins, users, countries } from "@/db/schema";
-import { eq, and, count, sql } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 
 export async function GET() {
   const user = db.select().from(users).limit(1).all()[0];

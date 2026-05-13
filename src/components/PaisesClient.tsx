@@ -13,8 +13,16 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
-    else setQuery("");
   }, [open]);
+
+  function toggleSearch() {
+    if (open) {
+      setQuery("");
+      setOpen(false);
+    } else {
+      setOpen(true);
+    }
+  }
 
   const filtered = query.trim()
     ? stats.filter(c =>
@@ -56,7 +64,7 @@ export function PaisesClient({ stats }: { stats: CountryStats[] }) {
         </div>
 
         <button
-          onClick={() => setOpen(o => !o)}
+          onClick={toggleSearch}
           className={cn(
             "w-9 h-9 rounded-full border flex items-center justify-center transition-all shrink-0",
             open
